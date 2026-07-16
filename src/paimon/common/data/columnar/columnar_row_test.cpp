@@ -22,7 +22,7 @@
 #include "arrow/array/array_base.h"
 #include "arrow/array/array_dict.h"
 #include "arrow/array/array_nested.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/columnar/columnar_row_ref.h"
 #include "paimon/common/utils/date_time_utils.h"
@@ -38,21 +38,21 @@ TEST(ColumnarRowTest, TestSimple) {
                         arrow::field("f5", arrow::int64()), arrow::field("f6", arrow::float32()),
                         arrow::field("f7", arrow::float64()), arrow::field("f8", arrow::utf8())});
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::boolean(), R"([true, false, false, true])")
+        arrow::json::ArrayFromJSONString(arrow::boolean(), R"([true, false, false, true])")
             .ValueOrDie();
     auto f2 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int8(), R"([0, 1, 2, 3])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int8(), R"([0, 1, 2, 3])").ValueOrDie();
     auto f3 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int16(), R"([4, 5, 6, 7])").ValueOrDie();
-    auto f4 = arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), R"([10, 11, 12, 13])")
+        arrow::json::ArrayFromJSONString(arrow::int16(), R"([4, 5, 6, 7])").ValueOrDie();
+    auto f4 = arrow::json::ArrayFromJSONString(arrow::int32(), R"([10, 11, 12, 13])")
                   .ValueOrDie();
-    auto f5 = arrow::ipc::internal::json::ArrayFromJSON(arrow::int64(), R"([15, 16, 17, 18])")
+    auto f5 = arrow::json::ArrayFromJSONString(arrow::int64(), R"([15, 16, 17, 18])")
                   .ValueOrDie();
-    auto f6 = arrow::ipc::internal::json::ArrayFromJSON(arrow::float32(), R"([0.0, 1.1, 2.2, 3.3])")
+    auto f6 = arrow::json::ArrayFromJSONString(arrow::float32(), R"([0.0, 1.1, 2.2, 3.3])")
                   .ValueOrDie();
-    auto f7 = arrow::ipc::internal::json::ArrayFromJSON(arrow::float64(), R"([5.5, 6.6, 7.7, 8.8])")
+    auto f7 = arrow::json::ArrayFromJSONString(arrow::float64(), R"([5.5, 6.6, 7.7, 8.8])")
                   .ValueOrDie();
-    auto f8 = arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(),
+    auto f8 = arrow::json::ArrayFromJSONString(arrow::utf8(),
                                                         R"(["Hello", "World", "HELLO", "WORLD"])")
                   .ValueOrDie();
     auto data = arrow::StructArray::Make({f1, f2, f3, f4, f5, f6, f7, f8}, target_type->fields())
@@ -76,9 +76,9 @@ TEST(ColumnarRowRefTest, TestSimple) {
     std::shared_ptr<arrow::DataType> target_type =
         arrow::struct_({arrow::field("f1", arrow::int32()), arrow::field("f2", arrow::utf8())});
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), R"([1, 2, 3])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int32(), R"([1, 2, 3])").ValueOrDie();
     auto f2 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(), R"(["alpha", "beta", "gamma"])")
+        arrow::json::ArrayFromJSONString(arrow::utf8(), R"(["alpha", "beta", "gamma"])")
             .ValueOrDie();
     auto data = arrow::StructArray::Make({f1, f2}, target_type->fields()).ValueOrDie();
 
@@ -115,20 +115,20 @@ TEST(ColumnarRowTest, TestComplexAndNestedType) {
         arrow::field("f10", arrow::timestamp(arrow::TimeUnit::MICRO)),
     });
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::date32(), R"([109, 1000, -1000, 555])")
+        arrow::json::ArrayFromJSONString(arrow::date32(), R"([109, 1000, -1000, 555])")
             .ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto f1 = arrow::json::ArrayFromJSONString(
                   arrow::decimal128(10, 3), R"(["1.234", "1234.000", "-9876.543", "666.888"])")
                   .ValueOrDie();
     auto f2 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::timestamp(arrow::TimeUnit::NANO),
+        arrow::json::ArrayFromJSONString(arrow::timestamp(arrow::TimeUnit::NANO),
                                                   R"(["1970-01-01T00:00:59","2000-02-29T23:23:23",
           "1899-01-01T00:59:20","2033-05-18T03:33:20"])")
             .ValueOrDie();
     auto f3 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::binary(), R"(["aaa", "bb", "ccc", "bbb"])")
+        arrow::json::ArrayFromJSONString(arrow::binary(), R"(["aaa", "bb", "ccc", "bbb"])")
             .ValueOrDie();
-    auto f4 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({
+    auto f4 = arrow::json::ArrayFromJSONString(arrow::struct_({
                                                             field("sub1", arrow::int64()),
                                                             field("sub2", arrow::int64()),
                                                             field("sub3", arrow::int64()),
@@ -141,16 +141,16 @@ TEST(ColumnarRowTest, TestComplexAndNestedType) {
       [4, 1, 0, 2]
     ])")
                   .ValueOrDie();
-    auto f5 = arrow::ipc::internal::json::ArrayFromJSON(arrow::list(arrow::int64()),
+    auto f5 = arrow::json::ArrayFromJSONString(arrow::list(arrow::int64()),
                                                         "[[1, 1, 2], [3], [2], [-4]]")
                   .ValueOrDie();
-    auto f6 = arrow::ipc::internal::json::ArrayFromJSON(arrow::map(arrow::int32(), arrow::int64()),
+    auto f6 = arrow::json::ArrayFromJSONString(arrow::map(arrow::int32(), arrow::int64()),
                                                         R"([[[1, 3], [4, 4]],
                                                             [[1, 5], [7, 6], [100, 7]],
                                                             [[0, 9]],
                                                             null])")
                   .ValueOrDie();
-    auto f7 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto f7 = arrow::json::ArrayFromJSONString(
                   arrow::map(arrow::int32(), arrow::list(arrow::int64())),
                   R"([[[1, [10, 20]], [4, [40, 50, 100]]],
                       [[1, [1, 2]], [7, [6]], [100, [8]]],
@@ -158,16 +158,16 @@ TEST(ColumnarRowTest, TestComplexAndNestedType) {
                       null])")
                   .ValueOrDie();
     auto f8 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::timestamp(arrow::TimeUnit::SECOND),
+        arrow::json::ArrayFromJSONString(arrow::timestamp(arrow::TimeUnit::SECOND),
                                                   R"(["1970-01-01T00:00:59","2000-02-29T23:23:23",
                                                       "1899-01-01T00:59:20","2033-05-18T03:33:20"])")
             .ValueOrDie();
-    auto f9 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto f9 = arrow::json::ArrayFromJSONString(
                   arrow::timestamp(arrow::TimeUnit::MILLI),
                   R"(["1970-01-01T00:00:59.001","2000-02-29T23:23:23",
                                                       "1899-01-01T00:59:20","2033-05-18T03:33:20"])")
                   .ValueOrDie();
-    auto f10 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto f10 = arrow::json::ArrayFromJSONString(
                    arrow::timestamp(arrow::TimeUnit::MICRO),
                    R"(["1970-01-01T00:00:59.000001","2000-02-29T23:23:23",
                                                       "1899-01-01T00:59:20","2033-05-18T03:33:20"])")
@@ -236,7 +236,7 @@ TEST(ColumnarRowTest, TestTimestampType) {
         arrow::field("ts_tz_nano", arrow::timestamp(arrow::TimeUnit::NANO, timezone)),
     };
     auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 ["1970-01-01 00:00:01", "1970-01-01 00:00:00.001", "1970-01-01 00:00:00.000001", "1970-01-01 00:00:00.000000001", "1970-01-01 00:00:02", "1970-01-01 00:00:00.002", "1970-01-01 00:00:00.000002", "1970-01-01 00:00:00.000000002"],
 ["1970-01-01 00:00:03", "1970-01-01 00:00:00.003", null, "1970-01-01 00:00:00.000000003", "1970-01-01 00:00:04", "1970-01-01 00:00:00.004", "1970-01-01 00:00:00.000004", "1970-01-01 00:00:00.000000004"],
 ["1970-01-01 00:00:05", "1970-01-01 00:00:00.005", null, null, "1970-01-01 00:00:06", null, "1970-01-01 00:00:00.000006", null]
@@ -272,10 +272,10 @@ TEST(ColumnarRowTest, TestNull) {
     std::shared_ptr<arrow::DataType> target_type =
         arrow::struct_({arrow::field("f1", arrow::boolean()), arrow::field("f2", arrow::int8())});
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::boolean(), R"([null, false, false, true])")
+        arrow::json::ArrayFromJSONString(arrow::boolean(), R"([null, false, false, true])")
             .ValueOrDie();
     auto f2 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int8(), R"([null, 1, 2, 3])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int8(), R"([null, 1, 2, 3])").ValueOrDie();
     auto data = arrow::StructArray::Make({f1, f2}, target_type->fields()).ValueOrDie();
 
     auto row = ColumnarRow(data->fields(), pool, 0);
@@ -288,11 +288,11 @@ TEST(ColumnarRowTest, TestNull) {
 
 TEST(ColumnarRowTest, TestDictionary) {
     auto pool = GetDefaultPool();
-    auto dict = arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(), R"(["foo", "bar", "baz"])")
+    auto dict = arrow::json::ArrayFromJSONString(arrow::utf8(), R"(["foo", "bar", "baz"])")
                     .ValueOrDie();
     auto dict_type = arrow::dictionary(arrow::int32(), arrow::utf8());
     auto indices =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), "[1, 2, 0, 2, 0]").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int32(), "[1, 2, 0, 2, 0]").ValueOrDie();
     std::shared_ptr<arrow::DictionaryArray> dict_array =
         std::make_shared<arrow::DictionaryArray>(dict_type, indices, dict);
 
@@ -302,13 +302,13 @@ TEST(ColumnarRowTest, TestDictionary) {
                                                  arrow::field("sub3", dict_type)}));
 
     auto list_offsets =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), R"([0, 5])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int32(), R"([0, 5])").ValueOrDie();
     auto f0_array = arrow::ListArray::FromArrays(*list_offsets, *dict_array).ValueOrDie();
 
     auto sub1_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int64(), R"([1])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int64(), R"([1])").ValueOrDie();
     auto sub2_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::binary(), R"(["apple"])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::binary(), R"(["apple"])").ValueOrDie();
     auto sub3_array =
         std::make_shared<arrow::DictionaryArray>(dict_type, indices->Slice(0, 1), dict);
     auto f1_array = std::make_shared<arrow::StructArray>(
@@ -352,7 +352,7 @@ TEST(ColumnarRowTest, TestDataLifeCycle) {
     std::shared_ptr<arrow::DataType> target_type = arrow::struct_({arrow::field(
         "f0", arrow::struct_({field("sub1", arrow::int64()), field("sub2", arrow::int64()),
                               field("sub3", arrow::int64()), field("sub4", arrow::int64())}))});
-    auto f0 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({
+    auto f0 = arrow::json::ArrayFromJSONString(arrow::struct_({
                                                             field("sub1", arrow::int64()),
                                                             field("sub2", arrow::int64()),
                                                             field("sub3", arrow::int64()),
@@ -393,9 +393,9 @@ TEST(ColumnarRowTest, TestColumnarRowRefGetBinary) {
         arrow::field("f1", arrow::binary()),
     });
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::binary(), R"(["hello", "world", null])")
+        arrow::json::ArrayFromJSONString(arrow::binary(), R"(["hello", "world", null])")
             .ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::binary(), R"(["abc", "", "xyz"])")
+    auto f1 = arrow::json::ArrayFromJSONString(arrow::binary(), R"(["abc", "", "xyz"])")
                   .ValueOrDie();
     auto data = arrow::StructArray::Make({f0, f1}, target_type->fields()).ValueOrDie();
 
@@ -436,7 +436,7 @@ TEST(ColumnarRowTest, TestColumnarRowRefToString) {
     std::shared_ptr<arrow::DataType> target_type =
         arrow::struct_({arrow::field("f0", arrow::int32())});
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), R"([1, 2, 3])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int32(), R"([1, 2, 3])").ValueOrDie();
     auto data = arrow::StructArray::Make({f0}, target_type->fields()).ValueOrDie();
 
     auto ctx = std::make_shared<ColumnarBatchContext>(data->fields(), pool);

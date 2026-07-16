@@ -187,7 +187,7 @@ TEST_F(TantivyLuceneCoexistTest, BothFactoriesResolve) {
 
 TEST_F(TantivyLuceneCoexistTest, SideBySideEnglishCorpusReturnsSameDocIds) {
     auto data_type = arrow::struct_({arrow::field("f0", arrow::utf8())});
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+    auto array = arrow::json::ArrayFromJSONString(data_type, R"([
         ["alpha beta gamma document"],
         ["alpha alpha document"],
         ["gamma delta epsilon"],
@@ -258,7 +258,7 @@ TEST_F(TantivyLuceneCoexistTest, IndependentLifecycleNoStateLeakage) {
     auto data_type = arrow::struct_({arrow::field("f0", arrow::utf8())});
 
     for (int32_t round = 0; round < 3; ++round) {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["round payload one"],
             ["round payload two"]
         ])")

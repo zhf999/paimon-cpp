@@ -20,7 +20,7 @@
 #include "arrow/array/array_base.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/table/special_fields.h"
 #include "paimon/common/types/data_field.h"
@@ -72,7 +72,7 @@ TEST_F(CompleteIndexScoreBatchReaderTest, TestSimple) {
         arrow::field("_ROW_ID", arrow::int64()),
     };
 
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         ["Alice", 10, null, 0],
         ["Bob", 11, null, 1],
         ["Cathy", 12, null, 2]
@@ -85,16 +85,14 @@ TEST_F(CompleteIndexScoreBatchReaderTest, TestSimple) {
 
     ASSERT_OK_AND_ASSIGN(auto result_array, ReadResultCollector::CollectResult(reader.get()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields), {R"([
+    auto expected_array_result =
+        arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields), {R"([
         ["Alice", 10, 1.23, 0],
         ["Bob", 11, 2.34, 1],
         ["Cathy", 12, 100.10, 2]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(expected_array->ApproxEquals(*result_array));
+])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(expected_array_result.ValueOrDie()->ApproxEquals(*result_array));
     reader->Close();
 }
 
@@ -106,7 +104,7 @@ TEST_F(CompleteIndexScoreBatchReaderTest, TestWithBitmap) {
         arrow::field("_ROW_ID", arrow::int64()),
     };
 
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         ["Alice", 10, null, 0],
         ["Bob", 11, null, 1],
         ["Cathy", 12, null, 2],
@@ -121,15 +119,13 @@ TEST_F(CompleteIndexScoreBatchReaderTest, TestWithBitmap) {
 
     ASSERT_OK_AND_ASSIGN(auto result_array, ReadResultCollector::CollectResult(reader.get()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields), {R"([
+    auto expected_array_result =
+        arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields), {R"([
         ["Alice", 10, 1.23, 0],
         ["David", 13, -19.12, 4]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(expected_array->ApproxEquals(*result_array));
+])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(expected_array_result.ValueOrDie()->ApproxEquals(*result_array));
     reader->Close();
 }
 
@@ -141,7 +137,7 @@ TEST_F(CompleteIndexScoreBatchReaderTest, TestReadWithNullScores) {
         arrow::field("_ROW_ID", arrow::int64()),
     };
 
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         ["Alice", 10, null, 0],
         ["Bob", 11, null, 1],
         ["Cathy", 12, null, 2]

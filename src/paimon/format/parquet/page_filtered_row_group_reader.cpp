@@ -198,8 +198,11 @@ Result<std::shared_ptr<arrow::ChunkedArray>> PageFilteredRowGroupReader::ReadFil
         record_reader, effective_ranges, effective_row_count, row_group_index, column_index));
 
     std::shared_ptr<arrow::ChunkedArray> chunked_array;
+    ::parquet::arrow::ReaderContext context;
+    context.reader = parquet_reader;
+    context.pool = pool.get();
     PAIMON_RETURN_NOT_OK_FROM_ARROW(::parquet::arrow::TransferColumnData(
-        record_reader.get(), field, col_descriptor, pool.get(), &chunked_array));
+        record_reader.get(), nullptr, field, col_descriptor, &context, &chunked_array));
 
     return chunked_array;
 }

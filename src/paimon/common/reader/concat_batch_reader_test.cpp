@@ -24,7 +24,7 @@
 #include "arrow/api.h"
 #include "arrow/array/array_base.h"
 #include "arrow/array/array_nested.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/memory/memory_pool.h"
 #include "paimon/status.h"
@@ -59,7 +59,7 @@ class ConcatBatchReaderTest : public ::testing::Test {
         for (const auto& batch_size : {1, 2, 4, 8}) {
             std::vector<std::unique_ptr<BatchReader>> readers;
             for (const auto& [batch_str, bitmap_data] : batches) {
-                auto f1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), batch_str)
+                auto f1 = arrow::json::ArrayFromJSONString(arrow::int32(), batch_str)
                               .ValueOrDie();
                 std::shared_ptr<arrow::Array> data =
                     arrow::StructArray::Make({f1}, {arrow::field("f1", arrow::int32())})
@@ -76,7 +76,7 @@ class ConcatBatchReaderTest : public ::testing::Test {
                 return;
             }
             auto expected_f1 =
-                arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), expected).ValueOrDie();
+                arrow::json::ArrayFromJSONString(arrow::int32(), expected).ValueOrDie();
             std::shared_ptr<arrow::Array> expected_array =
                 arrow::StructArray::Make({expected_f1}, {arrow::field("f1", arrow::int32())})
                     .ValueOrDie();

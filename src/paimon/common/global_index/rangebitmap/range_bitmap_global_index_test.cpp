@@ -23,6 +23,7 @@
 
 #include "arrow/c/bridge.h"
 #include "arrow/ipc/api.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/file_index/rangebitmap/range_bitmap_file_index.h"
 #include "paimon/common/global_index/wrap/file_index_writer_wrapper.h"
@@ -126,7 +127,7 @@ TEST_F(RangeBitmapGlobalIndexTest, TestIntType) {
     auto type = arrow::int32();
 
     auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+        arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                   R"([
         [0],
         [1],
@@ -196,7 +197,7 @@ TEST_F(RangeBitmapGlobalIndexTest, TestAllNull) {
     auto type = arrow::int32();
 
     auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+        arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                   R"([
         [null],
         [null],
@@ -276,7 +277,7 @@ TEST_F(RangeBitmapGlobalIndexTest, TestDoubleType) {
     auto type = arrow::float64();
 
     auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+        arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                   R"([
         [1.1],
         [2.2],

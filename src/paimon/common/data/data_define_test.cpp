@@ -19,7 +19,7 @@
 #include "arrow/api.h"
 #include "arrow/array/array_base.h"
 #include "arrow/array/array_binary.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/binary_array.h"
 #include "paimon/common/data/binary_row.h"
@@ -62,7 +62,7 @@ TEST(DataDefineTest, GetVariantValue) {
     }
     {
         auto array = std::dynamic_pointer_cast<arrow::StringArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(), R"(["abc", "def", "hello"])")
+            arrow::json::ArrayFromJSONString(arrow::utf8(), R"(["abc", "def", "hello"])")
                 .ValueOrDie());
         VariantType view_variant = array->GetView(2);  // Variant holding a StringView
         const auto view_value = DataDefine::GetVariantValue<std::string_view>(view_variant);

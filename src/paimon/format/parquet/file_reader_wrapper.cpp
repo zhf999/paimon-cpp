@@ -207,8 +207,8 @@ Status FileReaderWrapper::SeekToRow(uint64_t row_number) {
                     }
                 }
                 if (!fully_matched_indices.empty()) {
-                    PAIMON_RETURN_NOT_OK_FROM_ARROW(file_reader_->GetRecordBatchReader(
-                        fully_matched_indices, target_column_indices_, &batch_reader_));
+                    PAIMON_ASSIGN_OR_RAISE_FROM_ARROW(batch_reader_, file_reader_->GetRecordBatchReader(
+                        fully_matched_indices, target_column_indices_));
                 } else {
                     batch_reader_.reset();
                 }
@@ -440,8 +440,8 @@ Status FileReaderWrapper::PrepareForReading(const std::vector<TargetRowGroup>& t
 
         // Create standard reader for fully-matched row groups.
         if (!fully_matched_row_groups.empty()) {
-            PAIMON_RETURN_NOT_OK_FROM_ARROW(file_reader_->GetRecordBatchReader(
-                fully_matched_row_groups, column_indices, &batch_reader_));
+            PAIMON_ASSIGN_OR_RAISE_FROM_ARROW(batch_reader_, file_reader_->GetRecordBatchReader(
+                fully_matched_row_groups, column_indices));
         } else {
             batch_reader_.reset();
         }

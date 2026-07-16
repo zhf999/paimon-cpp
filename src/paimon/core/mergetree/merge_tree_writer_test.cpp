@@ -27,7 +27,7 @@
 #include "arrow/array/array_base.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/shredding/map_shared_shredding_utils.h"
 #include "paimon/common/factories/io_hook.h"
@@ -241,7 +241,7 @@ TEST_P(MergeTreeWriterTest, TestSimple) {
 
     // write batch
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 14.1],
       ["Paul", 20, 1, null],
       ["Alice", 10, 0, 13.1]
@@ -260,14 +260,11 @@ TEST_P(MergeTreeWriterTest, TestSimple) {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<FileStatus> data_file_status,
                          options.GetFileSystem()->GetFileStatus(expected_data_file_path));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
       [2, 0, "Alice", 10, 0, 13.1],
       [0, 0, "Lucy", 20, 1, 14.1],
       [1, 0, "Paul", 20, 1, null]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckFileContent(expected_data_file_path, expected_array);
 
     // check data file meta
@@ -311,7 +308,7 @@ TEST_P(MergeTreeWriterTest, TestWriteMultiBatch) {
                                            /*schema_id=*/0, options));
     // batch1
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 14.1],
       ["Paul", 20, 1, null],
       ["Alice", 10, 0, 13.1],
@@ -321,7 +318,7 @@ TEST_P(MergeTreeWriterTest, TestWriteMultiBatch) {
     WriteBatch(array1, /*row_kinds=*/{}, merge_writer.get());
     // batch2
     std::shared_ptr<arrow::Array> array2 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 114.1],
       ["Skye", 10, 0, 118.1],
       ["Alice", 10, 0, 113.1]
@@ -340,15 +337,12 @@ TEST_P(MergeTreeWriterTest, TestWriteMultiBatch) {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<FileStatus> data_file_status,
                          options.GetFileSystem()->GetFileStatus(expected_data_file_path));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
       [16, 0, "Alice", 10, 0, 113.1],
       [14, 0, "Lucy", 20, 1, 114.1],
       [13, 0, "Paul", 20, 1, 15.1],
       [15, 0, "Skye", 10, 0, 118.1]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckFileContent(expected_data_file_path, expected_array);
 
     // check data file meta
@@ -418,7 +412,7 @@ TEST_P(MergeTreeWriterTest, TestSharedShreddingMapDataFileMetaInfo) {
 
     // Each batch contains duplicated primary keys. DeduplicateMergeFunction should keep the
     // latest sequence number for each key across and within batches.
-    auto array1 = arrow::ipc::internal::json::ArrayFromJSON(value_type, R"([
+    auto array1 = arrow::json::ArrayFromJSONString(value_type, R"([
       [1, [["a", 10], ["b", 20]]],
       [2, [["c", 30]]],
       [1, [["a", 11], ["c", 31]]]
@@ -426,7 +420,7 @@ TEST_P(MergeTreeWriterTest, TestSharedShreddingMapDataFileMetaInfo) {
                       .ValueOrDie();
     WriteBatch(array1, /*row_kinds=*/{}, merge_writer.get());
 
-    auto array2 = arrow::ipc::internal::json::ArrayFromJSON(value_type, R"([
+    auto array2 = arrow::json::ArrayFromJSONString(value_type, R"([
       [2, [["b", 40]]],
       [1, [["c", 50], ["d", 60]]],
       [2, [["a", 70], ["b", 80], ["c", 90]]]
@@ -452,13 +446,10 @@ TEST_P(MergeTreeWriterTest, TestSharedShreddingMapDataFileMetaInfo) {
                                                    write_schema, column_to_k));
     auto physical_type = arrow::struct_(physical_schema->fields());
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(physical_type, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(physical_type, {R"([
       [14, 0, 1, [[0, 1, -1], 50, 60, null, null]],
       [15, 0, 2, [[2, 3, 0], 70, 80, 90, null]]
-    ])"},
-                                                                 &expected_array)
-                    .ok());
+    ])"}).ValueOrDie();
     CheckFileContent(expected_data_file_path, expected_array);
 
     MapSharedShreddingFieldMeta expected_shredding_meta;
@@ -528,7 +519,7 @@ TEST_P(MergeTreeWriterTest, TestSharedShreddingMultipleMapFieldsWithKAdaptation)
             GetParam() ? std::make_shared<IOManager>(dir->Str() + "/tmp", file_system_) : nullptr,
             /*enable_multi_thread_spill=*/false, shredding_context, pool_));
 
-    auto array1 = arrow::ipc::internal::json::ArrayFromJSON(value_type, R"([
+    auto array1 = arrow::json::ArrayFromJSONString(value_type, R"([
       [1, [["a", 10], ["b", 20]], [["x", "v1"]]],
       [2, [["a", 30]],           [["x", "v2"]]]
     ])")
@@ -557,7 +548,7 @@ TEST_P(MergeTreeWriterTest, TestSharedShreddingMultipleMapFieldsWithKAdaptation)
     attrs_meta1.max_row_width = 1;
     CheckShreddingFileSchema(file1_path, physical_schema1, /*field_index=*/4, attrs_meta1);
 
-    auto array2 = arrow::ipc::internal::json::ArrayFromJSON(value_type, R"([
+    auto array2 = arrow::json::ArrayFromJSONString(value_type, R"([
       [3, [["c", 100], ["d", 200], ["e", 300]], [["p", "a1"], ["q", "a2"], ["r", "a3"]]]
     ])")
                       .ValueOrDie();
@@ -587,7 +578,7 @@ TEST_P(MergeTreeWriterTest, TestSharedShreddingMultipleMapFieldsWithKAdaptation)
     attrs_meta2.max_row_width = 3;
     CheckShreddingFileSchema(file2_path, physical_schema2, /*field_index=*/4, attrs_meta2);
 
-    auto array3 = arrow::ipc::internal::json::ArrayFromJSON(value_type, R"([
+    auto array3 = arrow::json::ArrayFromJSONString(value_type, R"([
       [4, [["f", 400], ["g", 500]], [["s", "b1"], ["t", "b2"]]]
     ])")
                       .ValueOrDie();
@@ -638,7 +629,7 @@ TEST_P(MergeTreeWriterTest, TestWriteWithDeleteRow) {
                                            /*schema_id=*/0, options, user_defined_seq_comparator));
     // batch1
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 14.1],
       ["Paul", 20, 1, null],
       ["Alice", 10, 0, 13.1],
@@ -661,14 +652,11 @@ TEST_P(MergeTreeWriterTest, TestWriteWithDeleteRow) {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<FileStatus> data_file_status,
                          options.GetFileSystem()->GetFileStatus(expected_data_file_path));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
       [12, 3, "Alice", 10, 0, 13.1],
       [10, 0, "Lucy", 20, 1, 14.1],
       [11, 0, "Paul", 20, 1, null]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckFileContent(expected_data_file_path, expected_array);
 
     // check data file meta
@@ -713,7 +701,7 @@ TEST_P(MergeTreeWriterTest, TestMultiplePrepareCommit) {
                                            /*schema_id=*/0, options));
     // batch1
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 14.1],
       ["Paul", 20, 1, null],
       ["Alice", 10, 0, 13.1],
@@ -731,7 +719,7 @@ TEST_P(MergeTreeWriterTest, TestMultiplePrepareCommit) {
 
     // batch2
     std::shared_ptr<arrow::Array> array2 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 114.1],
       ["Skye", 10, 0, 118.1],
       ["Alice", 10, 0, 113.1]
@@ -760,24 +748,18 @@ TEST_P(MergeTreeWriterTest, TestMultiplePrepareCommit) {
         std::unique_ptr<FileStatus> data_file_status2,
         options.GetFileSystem()->GetFileStatus(expected_data_file_dir + expected_data_file_name2));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array1;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array1 = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
       [12, 0, "Alice", 10, 0, 13.1],
       [10, 0, "Lucy", 20, 1, 14.1],
       [13, 0, "Paul", 20, 1, 15.1]
-    ])"},
-                                                                         &expected_array1);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckFileContent(expected_data_file_dir + expected_data_file_name1, expected_array1);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array2;
-    array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array2 = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
       [16, 0, "Alice", 10, 0, 113.1],
       [14, 0, "Lucy", 20, 1, 114.1],
       [15, 0, "Skye", 10, 0, 118.1]
-    ])"},
-                                                                    &expected_array2);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckFileContent(expected_data_file_dir + expected_data_file_name2, expected_array2);
 
     // check data file meta
@@ -856,7 +838,7 @@ TEST_P(MergeTreeWriterTest, TestPrepareCommitForEmptyData) {
 
     // write empty batch
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(value_type_, R"([])").ValueOrDie();
     WriteBatch(array, /*row_kinds=*/{}, merge_writer.get());
     // prepare commit, without write
     ASSERT_OK_AND_ASSIGN(commit_increment, merge_writer->PrepareCommit(/*wait_compaction=*/false));
@@ -888,7 +870,7 @@ TEST_P(MergeTreeWriterTest, TestCloseBeforePrepareCommit) {
 
     // write batch
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 14.1],
       ["Paul", 20, 1, null],
       ["Alice", 10, 0, 13.1]
@@ -913,7 +895,7 @@ TEST_P(MergeTreeWriterTest, TestCloseDeletesUncommittedFiles) {
                                            /*schema_id=*/0, options));
 
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 14.1],
       ["Paul", 20, 1, null],
       ["Alice", 10, 0, 13.1]
@@ -949,7 +931,7 @@ TEST_P(MergeTreeWriterTest, TestAutoFlush) {
                                            /*schema_id=*/0, options));
     // batch1
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 14.1],
       ["Paul", 20, 1, null],
       ["Alice", 10, 0, 13.1],
@@ -960,7 +942,7 @@ TEST_P(MergeTreeWriterTest, TestAutoFlush) {
 
     // batch2
     std::shared_ptr<arrow::Array> array2 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 114.1],
       ["Skye", 10, 0, 118.1],
       ["Alice", 10, 0, 113.1]
@@ -984,24 +966,18 @@ TEST_P(MergeTreeWriterTest, TestAutoFlush) {
         std::unique_ptr<FileStatus> data_file_status2,
         options.GetFileSystem()->GetFileStatus(expected_data_file_dir + expected_data_file_name2));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array1;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array1 = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
       [12, 0, "Alice", 10, 0, 13.1],
       [10, 0, "Lucy", 20, 1, 14.1],
       [13, 0, "Paul", 20, 1, 15.1]
-    ])"},
-                                                                         &expected_array1);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckFileContent(expected_data_file_dir + expected_data_file_name1, expected_array1);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array2;
-    array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array2 = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
       [16, 0, "Alice", 10, 0, 113.1],
       [14, 0, "Lucy", 20, 1, 114.1],
       [15, 0, "Skye", 10, 0, 118.1]
-    ])"},
-                                                                    &expected_array2);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckFileContent(expected_data_file_dir + expected_data_file_name2, expected_array2);
 
     // check data file meta
@@ -1072,7 +1048,7 @@ TEST_P(MergeTreeWriterTest, TestIOException) {
 
         // write batch
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+            arrow::json::ArrayFromJSONString(value_type_, R"([
           ["Lucy", 20, 1, 14.1],
           ["Paul", 20, 1, null],
           ["Alice", 10, 0, 13.1]
@@ -1114,7 +1090,7 @@ TEST_P(MergeTreeWriterTest, TestBulkData) {
     size_t batch_size = 500;
     for (size_t i = 0; i < batch_size; ++i) {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+            arrow::json::ArrayFromJSONString(value_type_, R"([
           ["Lucy", 20, 1, 14.1],
           ["Paul", 20, 1, null],
           ["Alice", 10, 0, 13.1],
@@ -1177,7 +1153,7 @@ TEST_P(MergeTreeWriterTest, TestShouldWait) {
                           options, /*user_defined_seq_comparator=*/nullptr, fake_compact_manager));
 
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 14.1],
       ["Paul", 20, 1, null],
       ["Alice", 10, 0, 13.1]
@@ -1370,13 +1346,13 @@ TEST_F(MergeTreeWriterTest, TestSpillWithSameKeyDeduplicate) {
                                 /*shredding_context=*/nullptr, pool_));
 
     std::shared_ptr<arrow::Array> batch1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Alice", 1, 0, 1.0],
             ["Bob", 2, 0, 2.0]
         ])")
             .ValueOrDie();
     std::shared_ptr<arrow::Array> batch2 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Alice", 10, 0, 10.0],
             ["Charlie", 3, 0, 3.0]
         ])")
@@ -1389,7 +1365,7 @@ TEST_F(MergeTreeWriterTest, TestSpillWithSameKeyDeduplicate) {
     ASSERT_EQ(1u, TestHelper::CountChannelFiles(file_system_, dir->Str() + "/tmp"));
 
     std::shared_ptr<arrow::Array> batch3 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Bob", 20, 0, 20.0],
             ["Charlie", 30, 0, 30.0]
         ])")
@@ -1404,14 +1380,11 @@ TEST_F(MergeTreeWriterTest, TestSpillWithSameKeyDeduplicate) {
     // All three keys deduplicated: Alice(seq=2), Bob(seq=4), Charlie(seq=5).
     ASSERT_EQ(1, commit_increment.GetNewFilesIncrement().NewFiles().size());
     std::string expected_data_file_path = dir->Str() + "/data-" + uuid + "-0.orc";
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
             [2, 0, "Alice", 10, 0, 10.0],
             [4, 0, "Bob", 20, 0, 20.0],
             [5, 0, "Charlie", 30, 0, 30.0]
-        ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+        ])"}).ValueOrDie();
     CheckFileContent(expected_data_file_path, expected_array);
 }
 
@@ -1439,17 +1412,17 @@ TEST_F(MergeTreeWriterTest, TestIntermediateMergeSpillFileBound) {
                                 /*shredding_context=*/nullptr, pool_));
 
     std::shared_ptr<arrow::Array> batch1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Alice", 1, 0, 1.0]
         ])")
             .ValueOrDie();
     std::shared_ptr<arrow::Array> batch2 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Bob", 2, 0, 2.0]
         ])")
             .ValueOrDie();
     std::shared_ptr<arrow::Array> batch3 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Alice", 3, 0, 3.0]
         ])")
             .ValueOrDie();
@@ -1473,13 +1446,10 @@ TEST_F(MergeTreeWriterTest, TestIntermediateMergeSpillFileBound) {
 
     ASSERT_EQ(1, commit_increment.GetNewFilesIncrement().NewFiles().size());
     std::string expected_data_file_path = dir->Str() + "/data-" + uuid + "-0.orc";
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
             [2, 0, "Alice", 3, 0, 3.0],
             [1, 0, "Bob", 2, 0, 2.0]
-        ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+        ])"}).ValueOrDie();
     CheckFileContent(expected_data_file_path, expected_array);
 }
 
@@ -1507,7 +1477,7 @@ TEST_F(MergeTreeWriterTest, TestDiskQuotaExhaustedFallsBackToFlushWriteBuffer) {
 
     // Phase 1: Manual FlushMemory path — disk quota exhausted causes fallback.
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Alice", 1, 0, 1.0],
             ["Bob", 2, 0, 2.0],
             ["Charlie", 3, 0, 3.0]
@@ -1526,7 +1496,7 @@ TEST_F(MergeTreeWriterTest, TestDiskQuotaExhaustedFallsBackToFlushWriteBuffer) {
     // Phase 2: Auto-spill path — WRITE_BUFFER_SIZE=1 triggers spill on each WriteBatch.
     // batch1 spills successfully, but disk quota is now exhausted.
     std::shared_ptr<arrow::Array> batch1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Dave", 4, 0, 4.0]
         ])")
             .ValueOrDie();
@@ -1534,7 +1504,7 @@ TEST_F(MergeTreeWriterTest, TestDiskQuotaExhaustedFallsBackToFlushWriteBuffer) {
 
     // batch2: spill -> quota exhausted -> FlushWriteBuffer produces a data file.
     std::shared_ptr<arrow::Array> batch2 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Eve", 5, 0, 5.0]
         ])")
             .ValueOrDie();
@@ -1542,7 +1512,7 @@ TEST_F(MergeTreeWriterTest, TestDiskQuotaExhaustedFallsBackToFlushWriteBuffer) {
 
     // batch3: another round after flush, accumulates into a fresh buffer.
     std::shared_ptr<arrow::Array> batch3 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Frank", 6, 0, 6.0]
         ])")
             .ValueOrDie();
@@ -1585,7 +1555,7 @@ TEST_F(MergeTreeWriterTest, TestFlushMemoryQuotaExhaustedFallsBackToFlushWriteBu
                                 /*shredding_context=*/nullptr, pool_));
 
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Alice", 1, 0, 1.0],
             ["Bob", 2, 0, 2.0]
         ])")
@@ -1630,7 +1600,7 @@ TEST_F(MergeTreeWriterTest, TestCloseDeletesSpillTempFiles) {
                                 /*shredding_context=*/nullptr, pool_));
 
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Alice", 1, 0, 1.0],
             ["Bob", 2, 0, 2.0]
         ])")
@@ -1664,7 +1634,7 @@ TEST_F(MergeTreeWriterTest, TestMultiplePrepareCommitWithSpill) {
                                 /*shredding_context=*/nullptr, pool_));
 
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Alice", 1, 0, 1.0],
             ["Bob", 2, 0, 2.0]
         ])")
@@ -1679,17 +1649,14 @@ TEST_F(MergeTreeWriterTest, TestMultiplePrepareCommitWithSpill) {
     ASSERT_EQ(1, commit1.GetNewFilesIncrement().NewFiles().size());
 
     std::string expected_path1 = dir->Str() + "/data-" + uuid + "-0.orc";
-    std::shared_ptr<arrow::ChunkedArray> expected_array1;
-    auto status1 = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array1 = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
             [0, 0, "Alice", 1, 0, 1.0],
             [1, 0, "Bob", 2, 0, 2.0]
-        ])"},
-                                                                    &expected_array1);
-    ASSERT_TRUE(status1.ok());
+        ])"}).ValueOrDie();
     CheckFileContent(expected_path1, expected_array1);
 
     std::shared_ptr<arrow::Array> array2 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Dave", 4, 0, 4.0],
             ["Eve", 5, 0, 5.0]
         ])")
@@ -1704,13 +1671,10 @@ TEST_F(MergeTreeWriterTest, TestMultiplePrepareCommitWithSpill) {
     ASSERT_EQ(1, commit2.GetNewFilesIncrement().NewFiles().size());
 
     std::string expected_path2 = dir->Str() + "/data-" + uuid + "-1.orc";
-    std::shared_ptr<arrow::ChunkedArray> expected_array2;
-    auto status2 = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array2 = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
             [2, 0, "Dave", 4, 0, 4.0],
             [3, 0, "Eve", 5, 0, 5.0]
-        ])"},
-                                                                    &expected_array2);
-    ASSERT_TRUE(status2.ok());
+        ])"}).ValueOrDie();
     CheckFileContent(expected_path2, expected_array2);
 
     ASSERT_OK(merge_writer->Close());
@@ -1747,7 +1711,7 @@ TEST_F(MergeTreeWriterTest, TestSpillWithIOException) {
         // Write 4 batches, each with 2 rows sharing the same key to exercise deduplication.
         // Batch 1: triggers spill file 1
         std::shared_ptr<arrow::Array> batch1 =
-            arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+            arrow::json::ArrayFromJSONString(value_type_, R"([
                 ["Alice", 1, 0, 1.0],
                 ["Bob", 2, 0, 2.0]
             ])")
@@ -1757,7 +1721,7 @@ TEST_F(MergeTreeWriterTest, TestSpillWithIOException) {
 
         // Batch 2: triggers spill file 2 → intermediate merge (merge 2 files into 1)
         std::shared_ptr<arrow::Array> batch2 =
-            arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+            arrow::json::ArrayFromJSONString(value_type_, R"([
                 ["Alice", 10, 0, 10.0],
                 ["Charlie", 3, 0, 3.0]
             ])")
@@ -1767,7 +1731,7 @@ TEST_F(MergeTreeWriterTest, TestSpillWithIOException) {
 
         // Batch 3: triggers spill file at level 0 again
         std::shared_ptr<arrow::Array> batch3 =
-            arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+            arrow::json::ArrayFromJSONString(value_type_, R"([
                 ["Bob", 20, 0, 20.0],
                 ["Dave", 4, 0, 4.0]
             ])")
@@ -1778,7 +1742,7 @@ TEST_F(MergeTreeWriterTest, TestSpillWithIOException) {
         // Batch 4: triggers spill file at level 0 → another merge at level 0,
         // then level 1 has 2 files → merge at level 1 as well.
         std::shared_ptr<arrow::Array> batch4 =
-            arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+            arrow::json::ArrayFromJSONString(value_type_, R"([
                 ["Charlie", 30, 0, 30.0],
                 ["Eve", 5, 0, 5.0]
             ])")

@@ -27,7 +27,7 @@
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
 #include "arrow/c/helpers.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "arrow/status.h"
 #include "arrow/type.h"
 #include "gtest/gtest.h"
@@ -93,7 +93,7 @@ class AppendOnlyFileStoreWriteTest : public testing::Test {
     std::unique_ptr<RecordBatch> MakeBatch(const std::shared_ptr<arrow::Schema>& schema,
                                            const std::string& json) const {
         auto struct_type = arrow::struct_(schema->fields());
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(struct_type, json).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(struct_type, json).ValueOrDie();
         ::ArrowArray arrow_array;
         EXPECT_TRUE(arrow::ExportArray(*array, &arrow_array).ok());
         RecordBatchBuilder batch_builder(&arrow_array);

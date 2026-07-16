@@ -1609,6 +1609,12 @@ macro(build_arrow)
                                      "${ARROW_PREFIX}/lib/libarrow_dataset.a"
                                      INTERFACE_INCLUDE_DIRECTORIES "${ARROW_INCLUDE_DIR}")
 
+    add_library(arrow_compute STATIC IMPORTED)
+    set_target_properties(arrow_compute
+                          PROPERTIES IMPORTED_LOCATION
+                                     "${ARROW_PREFIX}/lib/libarrow_compute.a"
+                                     INTERFACE_INCLUDE_DIRECTORIES "${ARROW_INCLUDE_DIR}")
+
     add_library(arrow_acero STATIC IMPORTED)
     set_target_properties(arrow_acero
                           PROPERTIES IMPORTED_LOCATION
@@ -1631,8 +1637,11 @@ macro(build_arrow)
     add_dependencies(arrow_bundled_dependencies arrow_ep)
     add_dependencies(arrow_dataset arrow_ep)
     add_dependencies(arrow_acero arrow_ep)
+    add_dependencies(arrow_compute arrow_ep)
 
-    target_link_libraries(arrow_acero INTERFACE arrow)
+    target_link_libraries(arrow_compute INTERFACE arrow)
+
+    target_link_libraries(arrow_acero INTERFACE arrow arrow_compute)
 
     target_link_libraries(arrow_dataset INTERFACE arrow_acero)
 

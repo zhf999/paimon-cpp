@@ -256,7 +256,7 @@ TEST_P(GlobalIndexTest, TestWriteLuminaIndex) {
     std::string table_path = PathUtil::JoinPath(dir_->Str(), "foo.db/bar");
 
     std::vector<std::string> write_cols = schema->field_names();
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         ["a", [0.0, 0.0, 0.0, 0.0]],
         ["b", [0.0, 1.0, 0.0, 1.0]],
         ["c", [1.0, 0.0, 1.0, 0.0]],
@@ -313,7 +313,7 @@ TEST_P(GlobalIndexTest, TestWriteLuminaIndexWithMismatchedDimension) {
     std::string table_path = PathUtil::JoinPath(dir_->Str(), "foo.db/bar");
 
     std::vector<std::string> write_cols = schema->field_names();
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         ["a", [0.0, 0.0, 0.0]],
         ["b", [0.0, 0.0, 0.0, 0.0]]
     ])")
@@ -335,7 +335,7 @@ TEST_P(GlobalIndexTest, TestWriteIndex) {
     auto schema = arrow::schema(fields_);
 
     std::vector<std::string> write_cols = schema->field_names();
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 10, 1, 11.1],
 ["Bob", 10, 1, 12.1],
 ["Emily", 10, 0, 13.1],
@@ -399,7 +399,7 @@ TEST_P(GlobalIndexTest, TestWriteIndexWithPartition) {
     auto schema = arrow::schema(fields_);
 
     std::vector<std::string> write_cols = schema->field_names();
-    auto src_array1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array1 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 10, 1, 11.1],
 ["Bob", 10, 1, 12.1],
 ["Emily", 10, 0, 13.1],
@@ -411,7 +411,7 @@ TEST_P(GlobalIndexTest, TestWriteIndexWithPartition) {
                          WriteArray(table_path, {{"f1", "10"}}, write_cols, src_array1));
     ASSERT_OK(Commit(table_path, commit_msgs1));
 
-    auto src_array2 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array2 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Lucy", 20, 1, 15.1],
 ["Tony", 20, 0, 17.1],
 ["Alice", 20, null, 18.1]
@@ -830,7 +830,7 @@ TEST_P(GlobalIndexTest, TestWriteCommitScanReadIndex) {
     auto schema = arrow::schema(fields_);
 
     std::vector<std::string> write_cols = schema->field_names();
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 10, 1, 11.1],
 ["Bob", 10, 1, 12.1],
 ["Emily", 10, 0, 13.1],
@@ -896,7 +896,7 @@ TEST_P(GlobalIndexTest, TestWriteCommitScanReadIndexWithPartition) {
     };
 
     // write partition f2 = 10
-    auto src_array1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto src_array1 = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 ["Alice", [0.0, 0.0, 0.0, 0.0], 10, 11.1],
 ["Bob", [0.0, 1.0, 0.0, 1.0], 10, 12.1],
 ["Emily", [1.0, 0.0, 1.0, 0.0], 10, 13.1],
@@ -906,7 +906,7 @@ TEST_P(GlobalIndexTest, TestWriteCommitScanReadIndexWithPartition) {
     write_data_and_index(src_array1, {{"f2", "10"}}, Range(0, 3));
 
     // write partition f2 = 20
-    auto src_array2 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto src_array2 = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 ["Lucy", [10.0, 10.0, 10.0, 10.0], 20, 15.1],
 ["Bob", [10.0, 11.0, 10.0, 11.0], 20, 16.1],
 ["Tony", [11.0, 10.0, 11.0, 10.0], 20, 17.1],
@@ -970,7 +970,7 @@ TEST_P(GlobalIndexTest, TestWriteCommitScanReadIndexWithPartition) {
         // test scan and read for f2=10
         auto filter = [](int64_t id) -> bool { return id == 0; };
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", [0.0, 0.0, 0.0, 0.0], 10, 11.1, 4.21]
     ])")
                 .ValueOrDie();
@@ -982,7 +982,7 @@ TEST_P(GlobalIndexTest, TestWriteCommitScanReadIndexWithPartition) {
         // test scan and read for f2=20
         auto filter = [](int64_t id) -> bool { return id == 7 || id == 8; };
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Paul", [10.0, 10.0, 10.0, 10.0], 20, 19.1, 322.21]
     ])")
                 .ValueOrDie();
@@ -1021,7 +1021,7 @@ TEST_P(GlobalIndexTest, TestWriteCommitScanReadIndexWithScore) {
     std::string table_path = PathUtil::JoinPath(dir_->Str(), "foo.db/bar");
     std::vector<std::string> write_cols = schema->field_names();
 
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 ["Alice", [0.0, 0.0, 0.0, 0.0], 10, 11.1],
 ["Bob", [0.0, 1.0, 0.0, 1.0], 10, 12.1],
 ["Emily", [1.0, 0.0, 1.0, 0.0], 10, 13.1],
@@ -1063,7 +1063,7 @@ TEST_P(GlobalIndexTest, TestWriteCommitScanReadIndexWithScore) {
                                             {8, 360.21f}, {9, 398.01f}, {10, 322.21f}};
     {
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", [0.0, 0.0, 0.0, 0.0], 10, 11.1, 4.21],
 [0, "Bob", [0.0, 1.0, 0.0, 1.0], 10, 12.1, 2.01],
 [0, "Emily", [1.0, 0.0, 1.0, 0.0], 10, 13.1, 2.21],
@@ -1080,7 +1080,7 @@ TEST_P(GlobalIndexTest, TestWriteCommitScanReadIndexWithScore) {
     }
     {
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Emily", [1.0, 0.0, 1.0, 0.0], 10, 13.1, 2.21],
 [0, "Tony", [1.0, 1.0, 1.0, 1.0], 10, 14.1, 0.01],
 [0, "Alice", [11.0, 11.0, 11.0, 11.0], 20, 18.1, 398.01],
@@ -1091,7 +1091,7 @@ TEST_P(GlobalIndexTest, TestWriteCommitScanReadIndexWithScore) {
     }
     {
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Bob", [10.0, 11.0, 10.0, 11.0], 20, 16.1, 360.01]
     ])")
                 .ValueOrDie();
@@ -1099,7 +1099,7 @@ TEST_P(GlobalIndexTest, TestWriteCommitScanReadIndexWithScore) {
     }
     {
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Emily", [1.0, 0.0, 1.0, 0.0], 10, 13.1, null],
 [0, "Tony", [1.0, 1.0, 1.0, 1.0], 10, 14.1, null],
 [0, "Alice", [11.0, 11.0, 11.0, 11.0], 20, 18.1, null],
@@ -1141,7 +1141,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScan) {
     auto schema = arrow::schema(fields_);
     // write and commit data
     std::vector<std::string> write_cols = schema->field_names();
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 10, 1, 11.1],
 ["Bob", 10, 1, 12.1],
 ["Emily", 10, 0, 13.1],
@@ -1159,7 +1159,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScan) {
     auto result_fields = fields_;
     result_fields.insert(result_fields.begin(), SpecialFields::ValueKind().ArrowField());
     auto expected_all_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1],
 [0, "Emily", 10, 0, 13.1],
@@ -1192,7 +1192,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScan) {
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
 
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Alice", 20, null, 18.1]
     ])")
@@ -1218,7 +1218,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScan) {
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
 
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1],
 [0, "Bob", 10, 1, 16.1],
@@ -1257,7 +1257,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithOnlyOnePartitionHasIndex) 
     auto schema = arrow::schema(fields_);
     // write and commit data
     std::vector<std::string> write_cols = schema->field_names();
-    auto src_array1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array1 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 10, 1, 11.1],
 ["Bob", 10, 1, 12.1],
 ["Emily", 10, 0, 13.1],
@@ -1269,7 +1269,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithOnlyOnePartitionHasIndex) 
                          WriteArray(table_path, {{"f1", "10"}}, write_cols, src_array1));
     ASSERT_OK(Commit(table_path, commit_msgs1));
 
-    auto src_array2 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array2 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Lucy", 20, 1, 15.1],
 ["Tony", 20, 0, 17.1],
 ["Alice", 20, null, 18.1]
@@ -1291,7 +1291,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithOnlyOnePartitionHasIndex) 
                                     Literal(FieldType::STRING, "Alice", 5));
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1]
     ])")
                 .ValueOrDie();
@@ -1306,7 +1306,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithTwoIndexInDiffTwoPartition
     auto schema = arrow::schema(fields_);
     // write and commit data
     std::vector<std::string> write_cols = schema->field_names();
-    auto src_array1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array1 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 10, 1, 11.1],
 ["Bob", 10, 1, 12.1],
 ["Emily", 10, 0, 13.1],
@@ -1318,7 +1318,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithTwoIndexInDiffTwoPartition
                          WriteArray(table_path, {{"f1", "10"}}, write_cols, src_array1));
     ASSERT_OK(Commit(table_path, commit_msgs1));
 
-    auto src_array2 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array2 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Lucy", 20, 1, 15.1],
 ["Tony", 20, 0, 17.1],
 ["Alice", 20, null, 18.1]
@@ -1344,7 +1344,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithTwoIndexInDiffTwoPartition
                                     Literal(FieldType::STRING, "Alice", 5));
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1]
     ])")
                 .ValueOrDie();
@@ -1356,7 +1356,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithTwoIndexInDiffTwoPartition
                                                  FieldType::INT, Literal(1));
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Lucy", 20, 1, 15.1]
     ])")
                 .ValueOrDie();
@@ -1385,7 +1385,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithTwoIndexInDiffTwoPartition
         ASSERT_OK_AND_ASSIGN(auto predicate, PredicateBuilder::And({predicate1, predicate2}));
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1]
     ])")
                 .ValueOrDie();
@@ -1400,7 +1400,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithTwoPartitionAllWithIndex) 
     auto schema = arrow::schema(fields_);
     // write and commit data
     std::vector<std::string> write_cols = schema->field_names();
-    auto src_array1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array1 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 10, 1, 11.1],
 ["Bob", 10, 1, 12.1],
 ["Emily", 10, 0, 13.1],
@@ -1412,7 +1412,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithTwoPartitionAllWithIndex) 
                          WriteArray(table_path, {{"f1", "10"}}, write_cols, src_array1));
     ASSERT_OK(Commit(table_path, commit_msgs1));
 
-    auto src_array2 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array2 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Lucy", 20, 1, 15.1],
 ["Tony", 20, 0, 17.1],
 ["Alice", 20, null, 18.1]
@@ -1438,7 +1438,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithTwoPartitionAllWithIndex) 
                                     Literal(FieldType::STRING, "Alice", 5));
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Alice", 20, null, 18.1]
     ])")
@@ -1456,7 +1456,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithTwoPartitionAllWithIndex) 
         ASSERT_OK_AND_ASSIGN(auto predicate, PredicateBuilder::And({predicate1, predicate2}));
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1]
     ])")
                 .ValueOrDie();
@@ -1473,7 +1473,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithTwoPartitionAllWithIndex) 
         ASSERT_OK_AND_ASSIGN(auto predicate, PredicateBuilder::And({predicate1, predicate2}));
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1]
     ])")
                 .ValueOrDie();
@@ -1490,7 +1490,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithTwoPartitionAllWithIndex) 
         ASSERT_OK_AND_ASSIGN(auto predicate, PredicateBuilder::And({predicate1, predicate2}));
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Alice", 20, null, 18.1]
     ])")
@@ -1507,7 +1507,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithPartitionWithTwoFields) {
     // write and commit data
     std::vector<std::string> write_cols = schema->field_names();
 
-    auto src_array1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array1 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 10, 1, 11.1],
 ["Bob", 10, 1, 12.1],
 ["Bob", 10, 1, 16.1]
@@ -1517,7 +1517,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithPartitionWithTwoFields) {
                                                        write_cols, src_array1));
     ASSERT_OK(Commit(table_path, commit_msgs1));
 
-    auto src_array2 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array2 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Lucy", 20, 1, 15.1]
     ])")
                           .ValueOrDie();
@@ -1525,7 +1525,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithPartitionWithTwoFields) {
                                                        write_cols, src_array2));
     ASSERT_OK(Commit(table_path, commit_msgs2));
 
-    auto src_array3 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array3 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Emily", 10, 0, 13.1],
 ["Tony", 10, 0, 14.1]
     ])")
@@ -1559,7 +1559,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithPartitionWithTwoFields) {
 
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Bob", 10, 1, 12.1],
 [0, "Bob", 10, 1, 16.1]
     ])")
@@ -1575,7 +1575,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithPartitionWithTwoFields) {
 
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1],
 [0, "Bob", 10, 1, 16.1],
@@ -1624,7 +1624,7 @@ TEST_P(GlobalIndexTest, TestScanIndexWithTwoIndexes) {
     std::vector<std::string> write_cols = schema->field_names();
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 ["Alice", [0.0, 0.0, 0.0, 0.0], 10, 11.1],
 ["Bob", [0.0, 1.0, 0.0, 1.0], 10, 12.1],
 ["Emily", [1.0, 0.0, 1.0, 0.0], 10, 13.1],
@@ -1692,7 +1692,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithExternalPath) {
     std::vector<std::string> write_cols = schema->field_names();
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 ["Alice", [0.0, 0.0, 0.0, 0.0], 10, 11.1],
 ["Bob", [0.0, 1.0, 0.0, 1.0], 10, 12.1],
 ["Emily", [1.0, 0.0, 1.0, 0.0], 10, 13.1],
@@ -1724,7 +1724,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithExternalPath) {
     ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate, index_options));
 
     auto expected_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", [0.0, 0.0, 0.0, 0.0], 10, 11.1],
 [0, "Alice", [11.0, 11.0, 11.0, 11.0], 20, 18.1]
     ])")
@@ -1743,7 +1743,7 @@ TEST_P(GlobalIndexTest, TestIOException) {
 
     auto schema = arrow::schema(fields);
     std::vector<std::string> write_cols = schema->field_names();
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 ["Alice", [0.0, 0.0, 0.0, 0.0], 10, 11.1],
 ["Bob", [0.0, 1.0, 0.0, 1.0], 10, 12.1],
 ["Alice", [1.0, 0.0, 1.0, 0.0], 10, 13.1],
@@ -1792,7 +1792,7 @@ TEST_P(GlobalIndexTest, TestIOException) {
             PredicateBuilder::Equal(/*field_index=*/0, /*field_name=*/"f0", FieldType::STRING,
                                     Literal(FieldType::STRING, "Alice", 5));
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", [0.0, 0.0, 0.0, 0.0], 10, 11.1],
 [0, "Alice", [1.0, 0.0, 1.0, 0.0], 10, 13.1]
     ])")
@@ -1814,7 +1814,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithRangeBitmap) {
     std::string table_path = PathUtil::JoinPath(dir_->Str(), "foo.db/bar");
     auto schema = arrow::schema(fields_);
     std::vector<std::string> write_cols = schema->field_names();
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 10, 1, 11.1],
 ["Bob", 10, 1, 12.1],
 ["Emily", 15, 0, 13.1],
@@ -1832,7 +1832,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithRangeBitmap) {
     auto result_fields = fields_;
     result_fields.insert(result_fields.begin(), SpecialFields::ValueKind().ArrowField());
     auto expected_all_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1],
 [0, "Emily", 15, 0, 13.1],
@@ -1864,7 +1864,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithRangeBitmap) {
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
 
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1],
 [0, "Emily", 15, 0, 13.1]
@@ -1879,7 +1879,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithRangeBitmap) {
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
 
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Bob", 25, 1, 16.1],
 [0, "Tony", 30, 0, 17.1],
 [0, "Alice", 30, null, 18.1]
@@ -1902,7 +1902,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithRangeBitmap) {
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
 
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1]
     ])")
@@ -1930,7 +1930,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithRangeBitmapAndBitmap) {
     std::string table_path = PathUtil::JoinPath(dir_->Str(), "foo.db/bar");
     auto schema = arrow::schema(fields_);
     std::vector<std::string> write_cols = schema->field_names();
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 10, 1, 11.1],
 ["Bob", 10, 1, 12.1],
 ["Emily", 15, 0, 13.1],
@@ -1948,7 +1948,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithRangeBitmapAndBitmap) {
     auto result_fields = fields_;
     result_fields.insert(result_fields.begin(), SpecialFields::ValueKind().ArrowField());
     auto expected_all_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1],
 [0, "Emily", 15, 0, 13.1],
@@ -1981,7 +1981,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithRangeBitmapAndBitmap) {
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
 
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1]
     ])")
                 .ValueOrDie();
@@ -1999,7 +1999,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithRangeBitmapAndBitmap) {
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
 
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Bob", 25, 1, 16.1]
     ])")
                 .ValueOrDie();
@@ -2023,7 +2023,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithRangeBitmapAndBitmap) {
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
 
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Tony", 30, 0, 17.1],
 [0, "Alice", 30, null, 18.1]
     ])")
@@ -2038,7 +2038,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithRangeBitmapAndBitmap) {
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
 
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Emily", 15, 0, 13.1]
     ])")
                 .ValueOrDie();
@@ -2051,7 +2051,7 @@ TEST_P(GlobalIndexTest, TestDataEvolutionBatchScanWithRangeBitmapAndBitmap) {
         ASSERT_OK_AND_ASSIGN(auto plan, ScanGlobalIndexAndData(table_path, predicate));
 
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1],
 [0, "Emily", 15, 0, 13.1]
@@ -2087,7 +2087,7 @@ TEST_P(GlobalIndexTest, TestLuceneWriteCommitScanReadIndexWithScore) {
     std::string table_path = PathUtil::JoinPath(dir_->Str(), "foo.db/bar");
     std::vector<std::string> write_cols = schema->field_names();
 
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 ["This is an test document.", 0],
 ["This is an new document document document.", 1],
 ["Document document document document test.", 2],
@@ -2168,7 +2168,7 @@ TEST_P(GlobalIndexTest, TestWriteCommitScanReadLuceneIndexWithPartition) {
     };
 
     // write partition f1 = 10
-    auto src_array1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto src_array1 = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 ["This is an test document.", 10],
 ["This is an new document document document.", 10]
     ])")
@@ -2176,7 +2176,7 @@ TEST_P(GlobalIndexTest, TestWriteCommitScanReadLuceneIndexWithPartition) {
     write_data_and_index(src_array1, {{"f1", "10"}}, Range(0, 1));
 
     // write partition f1 = 20
-    auto src_array2 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto src_array2 = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 ["Document document document document test.", 20],
 ["unordered user-defined doc id", 20]
     ])")
@@ -2229,7 +2229,7 @@ TEST_P(GlobalIndexTest, TestBTreeWriteCommitScanReadIndex) {
 
     // Data sorted by f0 (string, ascending): Alice < Bob < Bob < Emily < Lucy < Tony < Tony
     // The last row has f0=null which is treated separately by the null bitmap.
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 10, 1, 11.1],
 ["Bob", 10, 1, 12.1],
 ["Bob", 20, 0, 16.1],
@@ -2402,7 +2402,7 @@ TEST_P(GlobalIndexTest, TestBTreeWriteCommitScanReadIndex) {
         auto result_fields = fields_;
         result_fields.insert(result_fields.begin(), SpecialFields::ValueKind().ArrowField());
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Bob", 10, 1, 12.1],
 [0, "Bob", 20, 0, 16.1]
     ])")
@@ -2427,7 +2427,7 @@ TEST_P(GlobalIndexTest, TestBTreeWriteCommitScanReadIndexWithPartition) {
     std::vector<std::string> write_cols = schema->field_names();
 
     // Write partition f1=10. Data sorted by f0: Alice < Bob < Bob < Emily < Tony
-    auto src_array1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array1 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 10, 1, 11.1],
 ["Bob", 10, 1, 12.1],
 ["Bob", 10, 0, 13.1],
@@ -2442,7 +2442,7 @@ TEST_P(GlobalIndexTest, TestBTreeWriteCommitScanReadIndexWithPartition) {
                          /*options=*/{}, Range(0, 4)));
 
     // Write partition f1=20. Data sorted by f0: Alice < Lucy < Tony
-    auto src_array2 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array2 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 20, null, 16.1],
 ["Lucy", 20, 1, 17.1],
 ["Tony", 20, 0, 18.1]
@@ -2546,7 +2546,7 @@ TEST_P(GlobalIndexTest, TestBTreeWriteCommitScanReadIndexWithPartition) {
         auto result_fields = fields_;
         result_fields.insert(result_fields.begin(), SpecialFields::ValueKind().ArrowField());
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Tony", 10, 1, 15.1],
 [0, "Tony", 20, 0, 18.1]
     ])")
@@ -2572,7 +2572,7 @@ TEST_P(GlobalIndexTest, TestBTreeWithPartitionAndCustomExecutor) {
     std::vector<std::string> write_cols = schema->field_names();
 
     // Write partition f1=10 (5 rows, sorted by f0)
-    auto src_array1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array1 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 10, 1, 11.1],
 ["Bob", 10, 1, 12.1],
 ["Bob", 10, 0, 13.1],
@@ -2587,7 +2587,7 @@ TEST_P(GlobalIndexTest, TestBTreeWithPartitionAndCustomExecutor) {
                          /*options=*/{}, Range(0, 4)));
 
     // Write partition f1=20 (3 rows, sorted by f0)
-    auto src_array2 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array2 = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 20, null, 16.1],
 ["Lucy", 20, 1, 17.1],
 ["Tony", 20, 0, 18.1]
@@ -2647,7 +2647,7 @@ TEST_P(GlobalIndexTest, TestBTreeWithPartitionAndCustomExecutor) {
     auto result_fields = fields_;
     result_fields.insert(result_fields.begin(), SpecialFields::ValueKind().ArrowField());
     auto expected_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Tony", 10, 1, 15.1],
 [0, "Tony", 20, 0, 18.1]
     ])")
@@ -2666,7 +2666,7 @@ TEST_P(GlobalIndexTest, TestBTreeAndBitmapCoexist) {
     std::vector<std::string> write_cols = schema->field_names();
 
     // Data sorted by f0 for btree: Alice < Bob < Bob < Emily < Lucy < Tony < Tony
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
 ["Alice", 10, 1, 11.1],
 ["Bob", 10, 1, 12.1],
 ["Bob", 25, 1, 16.1],
@@ -2774,7 +2774,7 @@ TEST_P(GlobalIndexTest, TestBTreeAndBitmapCoexist) {
         auto result_fields = fields_;
         result_fields.insert(result_fields.begin(), SpecialFields::ValueKind().ArrowField());
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Alice", 10, 1, 11.1]
     ])")
                 .ValueOrDie();
@@ -2800,7 +2800,7 @@ TEST_P(GlobalIndexTest, TestBTreeAndBitmapCoexist) {
         auto result_fields = fields_;
         result_fields.insert(result_fields.begin(), SpecialFields::ValueKind().ArrowField());
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Bob", 10, 1, 12.1],
 [0, "Bob", 25, 1, 16.1]
     ])")
@@ -2993,7 +2993,7 @@ TEST_P(GlobalIndexTest, TestBTreeWithLumina) {
     std::vector<std::string> write_cols = schema->field_names();
 
     // Data sorted by f0 for btree: Alice < Alice < Bob < Bob < Emily < Lucy < Paul < Tony
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 ["Alice", [0.0, 0.0, 0.0, 0.0], 10, 11.1],
 ["Alice", [11.0, 11.0, 11.0, 11.0], 20, 18.1],
 ["Bob", [0.0, 1.0, 0.0, 1.0], 10, 12.1],
@@ -3068,7 +3068,7 @@ TEST_P(GlobalIndexTest, TestBTreeWithLumina) {
         auto result_fields = fields;
         result_fields.insert(result_fields.begin(), SpecialFields::ValueKind().ArrowField());
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(result_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(result_fields), R"([
 [0, "Bob", [0.0, 1.0, 0.0, 1.0], 10, 12.1],
 [0, "Bob", [10.0, 11.0, 10.0, 11.0], 20, 16.1]
     ])")

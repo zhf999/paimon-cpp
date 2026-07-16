@@ -22,7 +22,7 @@
 #include "arrow/api.h"
 #include "arrow/array/array_base.h"
 #include "arrow/array/array_nested.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/memory/memory_pool.h"
 #include "paimon/status.h"
@@ -142,7 +142,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest, TestWithNoRowTrackingFields) {
     std::shared_ptr<arrow::DataType> file_type = arrow::struct_({fields[0], fields[1]});
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(file_type, R"([
+        arrow::json::ArrayFromJSONString(file_type, R"([
         [0, 30],
         [0, 31],
         [1, 32],
@@ -150,7 +150,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest, TestWithNoRowTrackingFields) {
     ])")
             .ValueOrDie());
     auto target_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(read_type, R"([
+        arrow::json::ArrayFromJSONString(read_type, R"([
         [0, 30, 100, 4],
         [0, 31, 101, 4],
         [1, 32, 102, 4],
@@ -173,7 +173,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest, TestWithAllNotNullRowTrackingFi
     std::shared_ptr<arrow::DataType> file_type = arrow::struct_(fields);
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(file_type, R"([
+        arrow::json::ArrayFromJSONString(file_type, R"([
         [0, 30, 100, 4],
         [0, 31, 101, 4],
         [1, 32, 102, 4],
@@ -196,7 +196,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest, TestWithPartialNullRowTrackingF
     std::shared_ptr<arrow::DataType> file_type = arrow::struct_(fields);
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(file_type, R"([
+        arrow::json::ArrayFromJSONString(file_type, R"([
         [0, 30, null, null],
         [0, 31, null, 3],
         [1, 32, null, 4],
@@ -205,7 +205,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest, TestWithPartialNullRowTrackingF
             .ValueOrDie());
 
     auto target_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(read_type, R"([
+        arrow::json::ArrayFromJSONString(read_type, R"([
         [0, 30, 100, 8],
         [0, 31, 101, 3],
         [1, 32, 102, 4],
@@ -228,7 +228,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest, TestWithAllNullRowTrackingField
     std::shared_ptr<arrow::DataType> file_type = arrow::struct_(fields);
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(file_type, R"([
+        arrow::json::ArrayFromJSONString(file_type, R"([
         [0, 30, null, null],
         [0, 31, null, null],
         [1, 32, null, null],
@@ -237,7 +237,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest, TestWithAllNullRowTrackingField
             .ValueOrDie());
 
     auto target_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(read_type, R"([
+        arrow::json::ArrayFromJSONString(read_type, R"([
         [0, 30, 100, 8],
         [0, 31, 101, 8],
         [1, 32, 102, 8],
@@ -263,7 +263,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest,
     std::shared_ptr<arrow::DataType> file_type = arrow::struct_(fields);
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(file_type, R"([
+        arrow::json::ArrayFromJSONString(file_type, R"([
         [0, 30, null, null],
         [0, 31, null, 3],
         [1, 32, null, 4],
@@ -272,7 +272,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest,
             .ValueOrDie());
 
     auto target_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(read_type, R"([
+        arrow::json::ArrayFromJSONString(read_type, R"([
         [0, 100, 8, 30],
         [0, 101, 3, 31],
         [1, 102, 4, 32],
@@ -296,7 +296,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest, TestNestedType) {
     std::shared_ptr<arrow::DataType> file_type = arrow::struct_(fields);
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(file_type, R"([
+        arrow::json::ArrayFromJSONString(file_type, R"([
         [[[0, 0]], [0.1, 0.2], [true, 2], null, null],
         [[[0, 1]], [0.1, 0.3], [true, 1], null, 3],
         [[[10, 10]], [1.1, 1.2], [false, 12], null, 4],
@@ -305,7 +305,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest, TestNestedType) {
             .ValueOrDie());
 
     auto target_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(read_type, R"([
+        arrow::json::ArrayFromJSONString(read_type, R"([
         [[[0, 0]], [0.1, 0.2], [true, 2], 100, 8],
         [[[0, 1]], [0.1, 0.3], [true, 1], 101, 3],
         [[[10, 10]], [1.1, 1.2], [false, 12], 102, 4],
@@ -329,7 +329,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest, TestInvalidWithReadNonExistFiel
     std::shared_ptr<arrow::DataType> file_type = arrow::struct_({fields[0]});
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(file_type, R"([
+        arrow::json::ArrayFromJSONString(file_type, R"([
         [0],
         [0],
         [1],
@@ -365,7 +365,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest, TestInvalidNextBatchBeforeSetRe
     std::shared_ptr<arrow::DataType> file_type = arrow::struct_({fields[0]});
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(file_type, R"([
+        arrow::json::ArrayFromJSONString(file_type, R"([
         [0],
         [0],
         [1],
@@ -395,7 +395,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest, TestInvalidNullFirstRowId) {
     std::shared_ptr<arrow::DataType> file_type = arrow::struct_({fields[0]});
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(file_type, R"([
+        arrow::json::ArrayFromJSONString(file_type, R"([
         [0],
         [0],
         [1],
@@ -429,7 +429,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest, TestOnlyReadRowTrackingFields) 
     std::shared_ptr<arrow::DataType> file_type = arrow::struct_({});
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(file_type, R"([
+        arrow::json::ArrayFromJSONString(file_type, R"([
         [],
         [],
         [],
@@ -437,7 +437,7 @@ TEST_F(CompleteRowTrackingFieldsBatchReaderTest, TestOnlyReadRowTrackingFields) 
     ])")
             .ValueOrDie());
     auto target_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(read_type, R"([
+        arrow::json::ArrayFromJSONString(read_type, R"([
         [100, 4],
         [101, 4],
         [102, 4],

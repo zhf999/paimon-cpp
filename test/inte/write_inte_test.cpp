@@ -35,7 +35,7 @@
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
 #include "arrow/c/helpers.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "arrow/type.h"
 #include "fmt/format.h"
 #include "gtest/gtest.h"
@@ -2388,14 +2388,12 @@ TEST_F(WriteInteTest, TestPKTableWriteWithAlterTable) {
                                               /*selection_bitmap=*/std::nullopt));
     ASSERT_OK_AND_ASSIGN(auto result_array,
                          ReadResultCollector::CollectResult(orc_batch_reader.get()));
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(read_fields), {R"([
+    auto expected_array_result =
+        arrow::json::ChunkedArrayFromJSONString(arrow::struct_(read_fields), {R"([
         [9, 0]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(expected_array->Equals(*result_array));
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(expected_array_result.ValueOrDie()->Equals(result_array));
 }
 
 TEST_P(WriteInteTest, TestWriteAndCommitIOException) {
@@ -2505,7 +2503,7 @@ TEST_P(WriteInteTest, TestWriteWithFieldId) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(data_fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type, R"([
         [[[0, 0]], [0.1, 0.2], [true, 2], "1970-01-01 00:02:03.123123", 2456, "0.22"],
         [[[127, 32767], [-128, -32768]], [1.1, 1.2], [false, 2222], "1970-01-01 00:02:03.123123",
         245, "0.12"],
@@ -2610,7 +2608,7 @@ TEST_P(WriteInteTest, TestAppendTableWriteAndReadWithExternalPath) {
                          FileStoreWrite::Create(std::move(write_context)));
 
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         ["Alice", 10, 0, 11.1],
         ["Bob", 10, 1, 12.1],
         ["Cathy", 10, 0, 13.1],
@@ -2661,7 +2659,7 @@ TEST_P(WriteInteTest, TestAppendTableWriteAndReadWithExternalPath) {
     auto data_type = arrow::struct_(fields_with_row_kind);
 
     std::shared_ptr<arrow::Array> expected_array =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        arrow::json::ArrayFromJSONString(data_type, R"([
         [0, "Alice", 10, 0, 11.1],
         [0, "Bob", 10, 1, 12.1],
         [0, "Cathy", 10, 0, 13.1],
@@ -2708,7 +2706,7 @@ TEST_P(WriteInteTest, TestPKTableWriteAndReadWithExternalPath) {
                          FileStoreWrite::Create(std::move(write_context)));
 
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         ["Alice", 10, 0, 11.1],
         ["Bob", 10, 1, 12.1],
         ["Cathy", 10, 0, 13.1],
@@ -2928,7 +2926,7 @@ TEST_P(WriteInteTest, TestWriteAndReadWithSpecialPartitionValue) {
     auto write = [&](const std::string& json_array,
                      const std::map<std::string, std::string>& partition) -> void {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), json_array)
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields), json_array)
                 .ValueOrDie();
         ::ArrowArray arrow_array;
         ASSERT_TRUE(arrow::ExportArray(*array, &arrow_array).ok());
@@ -2992,7 +2990,7 @@ TEST_P(WriteInteTest, TestWriteAndReadWithSpecialPartitionValue) {
         // To ensure consistent behavior across platforms, avoid using "__DEFAULT_PARTITION__" in
         // data.
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+            arrow::json::ArrayFromJSONString(data_type, R"([
 [0, "Cathy", 10, 0, 13.1, null, "a=b?"],
 [0, "David", 10, 0, 13.1, null, "a=b?"],
 [0, "Bob", 10, 0, 12.1, "", "a=b?"],
@@ -3027,7 +3025,7 @@ TEST_P(WriteInteTest, TestWriteAndReadWithSpecialPartitionValue) {
         ASSERT_OK_AND_ASSIGN(auto read_result,
                              ReadResultCollector::CollectResult(batch_reader.get()));
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+            arrow::json::ArrayFromJSONString(data_type, R"([
 [0, "Alice", 10, 0, 11.1, " ", "a=b?"]
 ])")
                 .ValueOrDie();
@@ -3054,7 +3052,7 @@ TEST_P(WriteInteTest, TestWriteAndReadWithSpecialPartitionValue) {
         ASSERT_OK_AND_ASSIGN(auto read_result,
                              ReadResultCollector::CollectResult(batch_reader.get()));
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+            arrow::json::ArrayFromJSONString(data_type, R"([
 [0, "Bob", 10, 0, 12.1, "", "a=b?"]
 ])")
                 .ValueOrDie();
@@ -3081,7 +3079,7 @@ TEST_P(WriteInteTest, TestWriteAndReadWithSpecialPartitionValue) {
         ASSERT_OK_AND_ASSIGN(auto read_result,
                              ReadResultCollector::CollectResult(batch_reader.get()));
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+            arrow::json::ArrayFromJSONString(data_type, R"([
 [0, "Cathy", 10, 0, 13.1, null, "a=b?"],
 [0, "David", 10, 0, 13.1, null, "a=b?"]
 ])")
@@ -3118,7 +3116,7 @@ TEST_P(WriteInteTest, TestWriteWithNestedSchema) {
                          FileStoreWrite::Create(std::move(write_context)));
 
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
             [[true, 2]],
             [null],
             [[false, 22]],
@@ -3162,7 +3160,7 @@ TEST_P(WriteInteTest, TestWriteWithNestedSchema) {
                                 arrow::field("_VALUE_KIND", arrow::int8()));
     auto data_type = arrow::struct_(fields_with_row_kind);
     std::shared_ptr<arrow::Array> expected_array =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        arrow::json::ArrayFromJSONString(data_type, R"([
             [0, [true, 2]],
             [0, null],
             [0, [false, 22]],
@@ -3706,7 +3704,7 @@ TEST_P(WriteInteTest, TestDataEvolutionWrite) {
     // write field: f0, f1, f2, f3, f4, f5
     std::vector<std::string> write_cols1 = typed_schema->field_names();
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         ["David", 5, 12, null, 2000, null],
         ["Lucy", 2, null, 1, null, null]
     ])")
@@ -3737,7 +3735,7 @@ TEST_P(WriteInteTest, TestDataEvolutionWrite) {
     // write field: f0, f2, f4, f5
     std::vector<std::string> write_cols2 = {"f0", "f2", "f4", "f5"};
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(
+        arrow::json::ArrayFromJSONString(
             arrow::struct_({fields[0], fields[2], fields[4], fields[5]}), R"([
         ["Alice", 50, null, 11.1],
         ["Paul", 20, 1, null],
@@ -3768,7 +3766,7 @@ TEST_P(WriteInteTest, TestDataEvolutionWrite) {
     // write field: f0, according to file_meta1
     std::vector<std::string> write_cols3 = {"f0"};
     auto src_array3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields[0]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields[0]}), R"([
         ["David3"],
         ["Lucy3"]
     ])")
@@ -4061,7 +4059,7 @@ TEST_P(WriteInteTest, TestPkSpillableDiskQuotaExhaustedFallsBackToFlush) {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<WriteContext> write_context, write_builder.Finish());
     ASSERT_OK_AND_ASSIGN(auto file_store_write, FileStoreWrite::Create(std::move(write_context)));
 
-    auto write_array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+    auto write_array = arrow::json::ArrayFromJSONString(data_type, R"([
         ["Alice", 10, 1, 1.0],
         ["Bob", 10, 2, 2.0]
     ])")
@@ -4123,10 +4121,10 @@ TEST_P(WriteInteTest, TestPkSpillableGlobalMemoryPreemptionDataCorrectness) {
     std::string long_str_a(48, 'a');
     std::string long_str_b(48, 'b');
     auto batch1 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, "[[\"" + long_str_a + "\", 10, 1]]")
+        arrow::json::ArrayFromJSONString(data_type, "[[\"" + long_str_a + "\", 10, 1]]")
             .ValueOrDie();
     auto batch2 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, "[[\"" + long_str_b + "\", 20, 2]]")
+        arrow::json::ArrayFromJSONString(data_type, "[[\"" + long_str_b + "\", 20, 2]]")
             .ValueOrDie();
 
     ArrowArray c_array1;
@@ -4220,9 +4218,9 @@ TEST_P(WriteInteTest, TestPkSpillableTempFilesCleanedAfterPrepareCommit) {
     ASSERT_OK_AND_ASSIGN(auto file_store_write, FileStoreWrite::Create(std::move(write_context)));
 
     auto batch1 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Alice", 10, 1]])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(data_type, R"([["Alice", 10, 1]])").ValueOrDie();
     auto batch2 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Bob", 10, 2]])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(data_type, R"([["Bob", 10, 2]])").ValueOrDie();
 
     ArrowArray c_array1;
     ASSERT_TRUE(arrow::ExportArray(*batch1, &c_array1).ok());
@@ -4294,11 +4292,11 @@ TEST_P(WriteInteTest, TestPkSpillableIntermediateMergeWithTempFileTracking) {
     };
 
     auto batch1 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Alice", 10, 1]])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(data_type, R"([["Alice", 10, 1]])").ValueOrDie();
     auto batch2 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Bob", 10, 2]])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(data_type, R"([["Bob", 10, 2]])").ValueOrDie();
     auto batch3 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Alice", 10, 3]])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(data_type, R"([["Alice", 10, 3]])").ValueOrDie();
 
     // Each write triggers spill. With LOCAL_SORT_MAX_NUM_FILE_HANDLES=2, leveled
     // merge triggers when a level reaches max_fan_in files.
@@ -4380,11 +4378,11 @@ TEST_P(WriteInteTest, TestPkSpillableMultiBucketMultiRoundDataCorrectness) {
 
     // Round 1: Bucket 0 writes Alice(dup) + Bob, Bucket 1 writes Dave(dup) + Eve
     auto r1_b0_batch1 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Alice", 10, 1]])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(data_type, R"([["Alice", 10, 1]])").ValueOrDie();
     auto r1_b0_batch2 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Bob", 10, 2]])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(data_type, R"([["Bob", 10, 2]])").ValueOrDie();
     auto r1_b0_batch3 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Alice", 10, 3]])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(data_type, R"([["Alice", 10, 3]])").ValueOrDie();
 
     ASSERT_OK(write_array_fn(file_store_write.get(), {{"pt", "10"}}, /*bucket=*/0, r1_b0_batch1));
     ASSERT_EQ(1, TestHelper::CountChannelFiles(file_system_, tmp_dir));
@@ -4396,11 +4394,11 @@ TEST_P(WriteInteTest, TestPkSpillableMultiBucketMultiRoundDataCorrectness) {
     ASSERT_EQ(2, TestHelper::CountChannelFiles(file_system_, tmp_dir));
 
     auto r1_b1_batch1 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Dave", 10, 10]])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(data_type, R"([["Dave", 10, 10]])").ValueOrDie();
     auto r1_b1_batch2 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Eve", 10, 20]])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(data_type, R"([["Eve", 10, 20]])").ValueOrDie();
     auto r1_b1_batch3 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Dave", 10, 30]])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(data_type, R"([["Dave", 10, 30]])").ValueOrDie();
 
     int32_t bucket0_files = TestHelper::CountChannelFiles(file_system_, tmp_dir);
     ASSERT_OK(write_array_fn(file_store_write.get(), {{"pt", "10"}}, /*bucket=*/1, r1_b1_batch1));
@@ -4423,10 +4421,10 @@ TEST_P(WriteInteTest, TestPkSpillableMultiBucketMultiRoundDataCorrectness) {
 
     // Round 2: Bucket 0 writes Charlie + Bob(overwrite), Bucket 1 writes Frank + Eve(overwrite)
     auto r2_b0_batch1 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Charlie", 10, 4]])")
+        arrow::json::ArrayFromJSONString(data_type, R"([["Charlie", 10, 4]])")
             .ValueOrDie();
     auto r2_b0_batch2 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Bob", 10, 5]])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(data_type, R"([["Bob", 10, 5]])").ValueOrDie();
 
     ASSERT_OK(write_array_fn(file_store_write.get(), {{"pt", "10"}}, /*bucket=*/0, r2_b0_batch1));
     ASSERT_EQ(1, TestHelper::CountChannelFiles(file_system_, tmp_dir));
@@ -4435,9 +4433,9 @@ TEST_P(WriteInteTest, TestPkSpillableMultiBucketMultiRoundDataCorrectness) {
     ASSERT_EQ(1, TestHelper::CountChannelFiles(file_system_, tmp_dir));
 
     auto r2_b1_batch1 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Frank", 10, 40]])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(data_type, R"([["Frank", 10, 40]])").ValueOrDie();
     auto r2_b1_batch2 =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([["Eve", 10, 50]])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(data_type, R"([["Eve", 10, 50]])").ValueOrDie();
 
     ASSERT_OK(write_array_fn(file_store_write.get(), {{"pt", "10"}}, /*bucket=*/1, r2_b1_batch1));
     ASSERT_EQ(2, TestHelper::CountChannelFiles(file_system_, tmp_dir));

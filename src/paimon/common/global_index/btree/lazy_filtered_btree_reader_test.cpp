@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/global_index/btree/btree_global_index_writer.h"
 #include "paimon/common/global_index/btree/btree_global_indexer.h"
@@ -112,7 +112,7 @@ class LazyFilteredBTreeReaderTest : public ::testing::Test {
         ASSERT_OK_AND_ASSIGN(auto indexer, BTreeGlobalIndexer::Create(options));
         ASSERT_OK_AND_ASSIGN(
             auto writer, indexer->CreateWriter("int_field", c_schema.get(), file_writer_, pool_));
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(
+        auto array = arrow::json::ArrayFromJSONString(
                          arrow::struct_({arrow::field("int_field", arrow::int32())}), json_data)
                          .ValueOrDie();
         ArrowArray c_array;

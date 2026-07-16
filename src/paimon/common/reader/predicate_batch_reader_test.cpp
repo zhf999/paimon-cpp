@@ -26,7 +26,7 @@
 #include "arrow/array/builder_binary.h"
 #include "arrow/array/builder_nested.h"
 #include "arrow/array/builder_primitive.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/defs.h"
 #include "paimon/memory/memory_pool.h"
@@ -136,7 +136,7 @@ TEST_F(PredicateBatchReaderTest, TestSimple) {
 }
 
 TEST_F(PredicateBatchReaderTest, TestVariousBatchSize) {
-    auto data_array = arrow::ipc::internal::json::ArrayFromJSON(data_type_, R"([
+    auto data_array = arrow::json::ArrayFromJSONString(data_type_, R"([
         ["str_-1", -1, false],
         ["str_0", 0, false], ["str_1", 1, true],
         ["str_-1", -1, false],
@@ -162,10 +162,9 @@ TEST_F(PredicateBatchReaderTest, TestOneByOneCase) {
     auto predicate = PredicateBuilder::Equal(/*field_index=*/2, /*field_name=*/"f2",
                                              FieldType::BOOLEAN, Literal(true));
     std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(data_type_, {R"([
+    auto array_status = arrow::json::ChunkedArrayFromJSONString(data_type_, {R"([
         ["str_1", 1, true], ["str_3", 3, true], ["str_5", 5, true], ["str_7", 7, true]
-    ])"},
-                                                                         &expected_array);
+    ])"}).ValueOrDie();
     CheckResult(std::move(reader), predicate, expected_array);
 }
 

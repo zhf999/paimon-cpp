@@ -31,7 +31,7 @@
 #include "arrow/io/caching.h"
 #include "arrow/io/interfaces.h"
 #include "arrow/ipc/api.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/types/data_field.h"
 #include "paimon/common/utils/arrow/arrow_input_stream_adapter.h"
@@ -153,7 +153,7 @@ class ParquetFileBatchReaderTest : public ::testing::Test,
 
         schema_ = arrow::schema(fields);
         struct_array_ = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 [true, 31, null, 300001, 3000000001, 3.1, 300.000000001, "s31", "a31", [[[5.11, 5.21], [true, 61]]], "1970-01-01 00:00:00.000071", 81, "0.91"],
 [false, 32, 302, 300002, 3000000002, 3.2, 300.000000002, "s32", "a32", [[[5.12, 5.22], [false, 62]]], "1970-01-01 00:00:00.000072", 82, "0.92"],
 [true, 33, 303, 300003, 3000000003, 3.3, 300.000000003, "s33", "a33", null, "1970-01-01 00:00:00.000073", 83, "0.93"],
@@ -327,7 +327,7 @@ TEST_F(ParquetFileBatchReaderTest, TestReadBinaryWrittenFromBinaryAndLargeBinary
         auto write_field = arrow::field("f0", write_type);
         auto write_schema = arrow::schema({write_field});
         auto write_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({write_field}), data_json)
+            arrow::json::ArrayFromJSONString(arrow::struct_({write_field}), data_json)
                 .ValueOrDie());
 
         std::string file_path = PathUtil::JoinPath(dir_->Str(), file_name);
@@ -345,7 +345,7 @@ TEST_F(ParquetFileBatchReaderTest, TestReadBinaryWrittenFromBinaryAndLargeBinary
         ASSERT_TRUE(file_schema->Equals(*read_schema));
 
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({read_field}), data_json)
+            arrow::json::ArrayFromJSONString(arrow::struct_({read_field}), data_json)
                 .ValueOrDie());
         auto expected_chunked_array = std::make_shared<arrow::ChunkedArray>(expected_array);
         ASSERT_OK_AND_ASSIGN(auto result_array, paimon::test::ReadResultCollector::CollectResult(
@@ -445,13 +445,10 @@ TEST_F(ParquetFileBatchReaderTest, TestSetReadSchemaWithLegacyParquetMissingFiel
     ASSERT_OK_AND_ASSIGN(auto result_array, paimon::test::ReadResultCollector::CollectResult(
                                                 parquet_batch_reader.get()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(
                     arrow::struct_(read_schema->fields()), {R"([
         ["Lucy", 1, 14.1]
-    ])"},
-                    &expected_array)
-                    .ok());
+    ])"}).ValueOrDie();
     ASSERT_TRUE(result_array->Equals(expected_array))
         << "expected: " << expected_array->ToString() << "\nactual: " << result_array->ToString();
 }
@@ -530,7 +527,7 @@ TEST_F(ParquetFileBatchReaderTest, TestNextBatchWithDictionary) {
 
     arrow::FieldVector fields = {f0, f1, f2};
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         [["a", "a", "b"], [["a", "q"], ["b", "w"]],             [10, "q", "a"]],
         [["a", "c"],      [["a", "e"], ["b", "r"], ["c", "e"]], [20, "w", "a"]],
         [["a", "d"],      [["d", "r"], ["e", "t"]],             [null, "e", "b"]],
@@ -568,7 +565,7 @@ TEST_F(ParquetFileBatchReaderTest, TestNestedStructChildProjectionRecall) {
 
     auto write_schema = arrow::schema({f0, f1, f2});
     auto write_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(write_schema->fields()), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(write_schema->fields()), R"([
         [1, [100, "a", 1.1], "x"],
         [2, [200, "b", 2.2], "y"],
         [3, [300, null, 3.3], "z"]
@@ -591,15 +588,12 @@ TEST_F(ParquetFileBatchReaderTest, TestNestedStructChildProjectionRecall) {
     ASSERT_OK_AND_ASSIGN(auto result_array, paimon::test::ReadResultCollector::CollectResult(
                                                 parquet_batch_reader.get()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(
                     arrow::struct_(read_schema->fields()), {R"([
         [1, ["a"]],
         [2, ["b"]],
         [3, [null]]
-    ])"},
-                    &expected_array)
-                    .ok());
+    ])"}).ValueOrDie();
 
     ASSERT_TRUE(result_array->Equals(expected_array))
         << "expected: " << expected_array->ToString() << "\nactual: " << result_array->ToString();
@@ -611,7 +605,7 @@ TEST_F(ParquetFileBatchReaderTest, TestReadSchemaWithMapSelectedKeysMetadata) {
 
     auto write_schema = arrow::schema({id_field, map_field});
     auto write_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(write_schema->fields()), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(write_schema->fields()), R"([
         [1, [["k1", 10], ["k2", 20], ["k3", 30]]],
         [2, [["k2", 200]]],
         [3, null]
@@ -722,7 +716,7 @@ TEST_F(ParquetFileBatchReaderTest, TestBitmapRowGroupPushDownWithMultiRowGroups)
     arrow::FieldVector fields = {arrow::field("f0", arrow::int32())};
     auto arrow_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_type, R"([
+        arrow::json::ArrayFromJSONString(arrow_type, R"([
         [0],
         [1],
         [2],
@@ -760,7 +754,7 @@ TEST_F(ParquetFileBatchReaderTest, TestBitmapPagePushDownWithMultiRowGroups) {
     arrow::FieldVector fields = {arrow::field("f0", arrow::int32())};
     auto arrow_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_type, R"([
+        arrow::json::ArrayFromJSONString(arrow_type, R"([
         [0],
         [1],
         [2],
@@ -941,7 +935,7 @@ TEST_F(ParquetFileBatchReaderTest, TestReadNoField) {
     arrow::FieldVector fields;
     auto arrow_type = arrow::struct_(fields);
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_type, R"([
+        arrow::json::ArrayFromJSONString(arrow_type, R"([
 [],
 []
     ])")
@@ -977,7 +971,7 @@ TEST_P(ParquetFileBatchReaderTest, TestTimestampType) {
     };
 
     auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 ["1970-01-01 00:00:01", "1970-01-01 00:00:00.001", "1970-01-01 00:00:00.000001", "1970-01-01 00:00:00.000000001", "1970-01-01 00:00:02", "1970-01-01 00:00:00.002", "1970-01-01 00:00:00.000002", "1970-01-01 00:00:00.000000002"],
 ["1970-01-01 00:00:03", "1970-01-01 00:00:00.003", null, "1970-01-01 00:00:00.000000003", "1970-01-01 00:00:04", "1970-01-01 00:00:00.004", "1970-01-01 00:00:00.000004", "1970-01-01 00:00:00.000000004"],
 ["1970-01-01 00:00:05", "1970-01-01 00:00:00.005", null, null, "1970-01-01 00:00:06", null, "1970-01-01 00:00:00.000006", null]
@@ -1060,7 +1054,7 @@ TEST_F(ParquetFileBatchReaderTest, TestAddMetadataPerFieldMetadata) {
                                                      DEFAULT_PARQUET_WRITER_MAX_MEMORY_USE, pool_));
 
     // Write one batch of data.
-    auto data = arrow::ipc::internal::json::ArrayFromJSON(
+    auto data = arrow::json::ArrayFromJSONString(
                     arrow::struct_(write_schema->fields()),
                     R"([[1, "alice", 95.5], [2, "bob", 88.0], [3, "charlie", 72.3]])")
                     .ValueOrDie();
@@ -1160,9 +1154,9 @@ TEST_F(ParquetFileBatchReaderTest, TestRowMappingSimple) {
         std::shared_ptr<arrow::ChunkedArray> batch2,
         paimon::test::ReadResultCollector::CollectResultOneBatch(parquet_batch_reader.get()));
     auto expected_batch2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
-[3],
-[5]
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
+            "[3]",
+            "[5]"
     ])")
             .ValueOrDie());
     ASSERT_TRUE(batch2->chunk(0)->Equals(expected_batch2)) << batch2->ToString();

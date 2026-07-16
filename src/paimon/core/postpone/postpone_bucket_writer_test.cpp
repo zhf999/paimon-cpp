@@ -24,7 +24,7 @@
 #include "arrow/api.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/data_define.h"
 #include "paimon/common/data/shredding/map_shared_shredding_utils.h"
@@ -180,7 +180,7 @@ TEST_P(PostponeBucketWriterTest, TestSimple) {
 
     // write batch
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 14.1],
       ["Paul", 40, 2, null],
       ["Lucy", 30, 3, 15.1],
@@ -200,15 +200,12 @@ TEST_P(PostponeBucketWriterTest, TestSimple) {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<FileStatus> data_file_status,
                          options.GetFileSystem()->GetFileStatus(expected_data_file_path));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
       [-1, 0, "Lucy", 20, 1, 14.1],
       [-1, 0, "Paul", 40, 2, null],
       [-1, 0, "Lucy", 30, 3, 15.1],
       [-1, 0, "Alice", 10, 0, 13.1]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckFileContent(file_format, expected_data_file_path, write_type_, expected_array);
 
     // check data file meta
@@ -258,7 +255,7 @@ TEST_P(PostponeBucketWriterTest, TestNestedType) {
                                      /*shredding_context=*/nullptr, pool_));
 
     // write batch
-    auto array1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto array1 = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         ["Lucy", [null, [1, true], null], [[[1, true], true]]],
         ["Bob", [[2, false], null], null],
         ["David", [[2, false], [3, true], [4, null]], [[[1, true], true], [[5, false], null]]],
@@ -284,14 +281,12 @@ TEST_P(PostponeBucketWriterTest, TestNestedType) {
     write_fields.insert(write_fields.end(), fields.begin(), fields.end());
     std::shared_ptr<arrow::ChunkedArray> expected_array;
     auto write_type = arrow::struct_(write_fields);
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type, {R"([
+    auto array_status = arrow::json::ChunkedArrayFromJSONString(write_type, {R"([
         [-1, 0, "Lucy", [null, [1, true], null], [[[1, true], true]]],
         [-1, 0, "Bob", [[2, false], null], null],
         [-1, 0, "David", [[2, false], [3, true], [4, null]], [[[1, true], true], [[5, false], null]]],
         [-1, 0, "Alice", null, null]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckFileContent(file_format, expected_data_file_path, write_type, expected_array);
 
     // check data file meta
@@ -343,7 +338,7 @@ TEST_F(PostponeBucketWriterTest, TestSharedShreddingMap) {
         PostponeBucketWriter::Create(std::vector<std::string>{"key"}, path_factory, /*schema_id=*/1,
                                      value_schema, options, shredding_context, pool_));
 
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         ["Lucy", [["a", 1], ["b", 2]]],
         ["Bob", [["c", 3], ["a", 4]]]
     ])")
@@ -379,13 +374,10 @@ TEST_F(PostponeBucketWriterTest, TestSharedShreddingMap) {
                              expected_meta);
 
     auto physical_type = arrow::struct_(expected_schema->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(physical_type, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(physical_type, {R"([
         [-1, 0, "Lucy", [[0, 1, -1], 1, 2, null, null]],
         [-1, 0, "Bob",  [[2, 0, -1], 3, 4, null, null]]
-    ])"},
-                                                                 &expected_array)
-                    .ok());
+    ])"}).ValueOrDie();
     CheckFileContent(file_format, data_file_path, physical_type, expected_array);
 }
 
@@ -407,7 +399,7 @@ TEST_P(PostponeBucketWriterTest, TestWriteMultiBatch) {
 
     // write batch 1, batch size = 3
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["David", 120, 11, null],
       ["Bob", 140, 12, null],
       ["Alex", 110, 10, null]
@@ -417,7 +409,7 @@ TEST_P(PostponeBucketWriterTest, TestWriteMultiBatch) {
 
     // write batch 2, batch size = 4, with retracted row
     std::shared_ptr<arrow::Array> array2 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 14.1],
       ["Paul", 40, 2, null],
       ["Lucy", 30, 3, 15.1],
@@ -431,7 +423,7 @@ TEST_P(PostponeBucketWriterTest, TestWriteMultiBatch) {
 
     // write batch 3, batch size = 2
     std::shared_ptr<arrow::Array> array3 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Judy", 220, 21, 24.1],
       ["Tom", 210, 20, 23.1]
     ])")
@@ -449,8 +441,7 @@ TEST_P(PostponeBucketWriterTest, TestWriteMultiBatch) {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<FileStatus> data_file_status,
                          options.GetFileSystem()->GetFileStatus(expected_data_file_path));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
       [-1, 0, "David", 120, 11, null],
       [-1, 0, "Bob", 140, 12, null],
       [-1, 0, "Alex", 110, 10, null],
@@ -460,9 +451,7 @@ TEST_P(PostponeBucketWriterTest, TestWriteMultiBatch) {
       [-1, 3, "Alice", 10, 0, 13.1],
       [-1, 0, "Judy", 220, 21, 24.1],
       [-1, 0, "Tom", 210, 20, 23.1]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckFileContent(file_format, expected_data_file_path, write_type_, expected_array);
 
     // check data file meta
@@ -506,7 +495,7 @@ TEST_P(PostponeBucketWriterTest, TestMultiplePrepareCommit) {
 
     // write batch 1, batch size = 3
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["David", 120, 11, null],
       ["Bob", 140, 12, null],
       ["Alex", 110, 10, null]
@@ -526,7 +515,7 @@ TEST_P(PostponeBucketWriterTest, TestMultiplePrepareCommit) {
 
     // write batch 2, batch size = 2
     std::shared_ptr<arrow::Array> array2 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Judy", 220, 21, 24.1],
       ["Tom", 210, 20, 23.1]
     ])")
@@ -556,24 +545,18 @@ TEST_P(PostponeBucketWriterTest, TestMultiplePrepareCommit) {
         std::unique_ptr<FileStatus> data_file_status2,
         options.GetFileSystem()->GetFileStatus(expected_data_file_dir + expected_data_file_name2));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array1;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array1 = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
       [-1, 0, "David", 120, 11, null],
       [-1, 0, "Bob", 140, 12, null],
       [-1, 0, "Alex", 110, 10, null]
-    ])"},
-                                                                         &expected_array1);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckFileContent(file_format, expected_data_file_dir + expected_data_file_name1, write_type_,
                      expected_array1);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array2;
-    array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(write_type_, {R"([
+    auto expected_array2 = arrow::json::ChunkedArrayFromJSONString(write_type_, {R"([
       [-1, 0, "Judy", 220, 21, 24.1],
       [-1, 0, "Tom", 210, 20, 23.1]
-    ])"},
-                                                                    &expected_array2);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckFileContent(file_format, expected_data_file_dir + expected_data_file_name2, write_type_,
                      expected_array2);
 
@@ -644,7 +627,7 @@ TEST_P(PostponeBucketWriterTest, TestPrepareCommitForEmptyData) {
 
     // write empty batch
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(value_type_, R"([])").ValueOrDie();
     WriteBatch(array, /*row_kinds=*/{}, postpone_bucket_writer.get());
     // prepare commit, without write
     ASSERT_OK_AND_ASSIGN(commit_increment,
@@ -679,7 +662,7 @@ TEST_P(PostponeBucketWriterTest, TestCloseBeforePrepareCommit) {
 
     // write batch
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 14.1],
       ["Paul", 40, 2, null],
       ["Lucy", 30, 3, 15.1],
@@ -713,7 +696,7 @@ TEST_P(PostponeBucketWriterTest, TestIOException) {
 
         // write batch
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+            arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Lucy", 20, 1, 14.1],
       ["Paul", 40, 2, null],
       ["Lucy", 30, 3, 15.1],

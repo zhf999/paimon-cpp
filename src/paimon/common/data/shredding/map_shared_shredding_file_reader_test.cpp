@@ -25,7 +25,7 @@
 
 #include "arrow/api.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "arrow/util/key_value_metadata.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/shredding/map_shared_shredding_utils.h"
@@ -91,7 +91,7 @@ class MapSharedShreddingFileReaderTest : public ::testing::Test {
             [3, null],
             [4, [[3, 4], 60, 70, [[0, 80], [2, null]]]]
         ])";
-        return arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(physical_schema->fields()),
+        return arrow::json::ArrayFromJSONString(arrow::struct_(physical_schema->fields()),
                                                          json)
             .ValueOrDie();
     }
@@ -178,7 +178,7 @@ class MapSharedShreddingFileReaderTest : public ::testing::Test {
     std::unique_ptr<RecordBatch> CreateBatch(const std::shared_ptr<arrow::Schema>& schema,
                                              const std::string& json) const {
         auto array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(schema->fields()), json)
+            arrow::json::ArrayFromJSONString(arrow::struct_(schema->fields()), json)
                 .ValueOrDie();
         ::ArrowArray arrow_array;
         EXPECT_TRUE(arrow::ExportArray(*array, &arrow_array).ok());
@@ -266,17 +266,15 @@ TEST_F(MapSharedShreddingFileReaderTest, TestAllExistSelectedKeysWithoutOverflow
                                     /*selection_bitmap=*/std::nullopt));
     ASSERT_OK_AND_ASSIGN(auto actual, ReadResultCollector::CollectResult(reader.get()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(
                     arrow::struct_(logical_schema_->fields()), {R"([
                         [1, [["b", 20]]],
                         [2, []],
                         [3, null],
                         [4, []]
-                    ])"},
-                    &expected)
-                    .ok());
-    AssertChunkedArrayEquals(expected, actual);
+                    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    AssertChunkedArrayEquals(expected_array_result.ValueOrDie(), actual);
 }
 
 TEST_F(MapSharedShreddingFileReaderTest, TestAllExistSelectedKeysWithOverflow) {
@@ -288,17 +286,15 @@ TEST_F(MapSharedShreddingFileReaderTest, TestAllExistSelectedKeysWithOverflow) {
                                     /*selection_bitmap=*/std::nullopt));
     ASSERT_OK_AND_ASSIGN(auto actual, ReadResultCollector::CollectResult(reader.get()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(
                     arrow::struct_(logical_schema_->fields()), {R"([
                         [1, [["a", 10]]],
                         [2, [["a", 40], ["c", 30]]],
                         [3, null],
                         [4, [["a", 80], ["c", null]]]
-                    ])"},
-                    &expected)
-                    .ok());
-    AssertChunkedArrayEquals(expected, actual);
+                    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    AssertChunkedArrayEquals(expected_array_result.ValueOrDie(), actual);
 }
 
 TEST_F(MapSharedShreddingFileReaderTest, TestPartialExistSelectedKeys) {
@@ -311,17 +307,15 @@ TEST_F(MapSharedShreddingFileReaderTest, TestPartialExistSelectedKeys) {
 
     ASSERT_OK_AND_ASSIGN(auto actual, ReadResultCollector::CollectResult(reader.get()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(
                     arrow::struct_(logical_schema_->fields()), {R"([
                         [1, [["a", 10]]],
                         [2, [["a", 40], ["c", 30]]],
                         [3, null],
                         [4, [["a", 80], ["c", null]]]
-                    ])"},
-                    &expected)
-                    .ok());
-    AssertChunkedArrayEquals(expected, actual);
+                    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    AssertChunkedArrayEquals(expected_array_result.ValueOrDie(), actual);
 }
 
 TEST_F(MapSharedShreddingFileReaderTest, TestMissingSelectedKeysReadsWholeMap) {
@@ -331,17 +325,15 @@ TEST_F(MapSharedShreddingFileReaderTest, TestMissingSelectedKeysReadsWholeMap) {
                                     /*selection_bitmap=*/std::nullopt));
     ASSERT_OK_AND_ASSIGN(auto actual, ReadResultCollector::CollectResult(reader.get()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(
                     arrow::struct_(logical_schema_->fields()), {R"([
                         [1, [["a", 10], ["b", 20]]],
                         [2, [["a", 40], ["c", 30]]],
                         [3, null],
                         [4, [["a", 80], ["c", null], ["d", 60], ["e", 70]]]
-                    ])"},
-                    &expected)
-                    .ok());
-    AssertChunkedArrayEquals(expected, actual);
+                    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    AssertChunkedArrayEquals(expected_array_result.ValueOrDie(), actual);
 }
 
 TEST_F(MapSharedShreddingFileReaderTest, TestSpecialSelectedKeys) {
@@ -357,7 +349,7 @@ TEST_F(MapSharedShreddingFileReaderTest, TestSpecialSelectedKeys) {
         [3, null]
     ])";
     auto physical_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(physical_schema->fields()), json)
+        arrow::json::ArrayFromJSONString(arrow::struct_(physical_schema->fields()), json)
             .ValueOrDie();
 
     auto assert_read = [&](const std::string& selected_keys, const std::string& expected_json) {
@@ -368,11 +360,10 @@ TEST_F(MapSharedShreddingFileReaderTest, TestSpecialSelectedKeys) {
                                         /*selection_bitmap=*/std::nullopt));
         ASSERT_OK_AND_ASSIGN(auto actual, ReadResultCollector::CollectResult(reader.get()));
 
-        std::shared_ptr<arrow::ChunkedArray> expected;
-        ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(
-                        arrow::struct_(logical_schema_->fields()), {expected_json}, &expected)
-                        .ok());
-        AssertChunkedArrayEquals(expected, actual);
+        auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(
+                        arrow::struct_(logical_schema_->fields()), {expected_json});
+        ASSERT_TRUE(expected_array_result.ok());
+        AssertChunkedArrayEquals(expected_array_result.ValueOrDie(), actual);
     };
 
     assert_read("     ", R"([
@@ -407,17 +398,15 @@ TEST_F(MapSharedShreddingFileReaderTest, TestUnknownSelectedKeyReturnsEmptyMap) 
 
     ASSERT_OK_AND_ASSIGN(auto actual, ReadResultCollector::CollectResult(reader.get()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(
                     arrow::struct_(logical_schema_->fields()), {R"([
                         [1, []],
                         [2, []],
                         [3, null],
                         [4, []]
-                    ])"},
-                    &expected)
-                    .ok());
-    AssertChunkedArrayEquals(expected, actual);
+                    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    AssertChunkedArrayEquals(expected_array_result.ValueOrDie(), actual);
 }
 
 TEST_F(MapSharedShreddingFileReaderTest, TestInvalidNullFieldMappingField) {
@@ -426,7 +415,7 @@ TEST_F(MapSharedShreddingFileReaderTest, TestInvalidNullFieldMappingField) {
         [1, [null, 10, null, null]]
     ])";
     auto physical_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(physical_schema->fields()), json)
+        arrow::json::ArrayFromJSONString(arrow::struct_(physical_schema->fields()), json)
             .ValueOrDie();
     ASSERT_OK_AND_ASSIGN(auto reader,
                          CreateReader(physical_array, physical_schema, /*selected_keys=*/"a"));
@@ -443,7 +432,7 @@ TEST_F(MapSharedShreddingFileReaderTest, TestInvalidNullFieldMappingFieldElement
         [1, [[0, null], 10, null, null]]
     ])";
     auto physical_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(physical_schema->fields()), json)
+        arrow::json::ArrayFromJSONString(arrow::struct_(physical_schema->fields()), json)
             .ValueOrDie();
     ASSERT_OK_AND_ASSIGN(auto reader,
                          CreateReader(physical_array, physical_schema, /*selected_keys=*/"b"));
@@ -477,7 +466,7 @@ TEST_F(MapSharedShreddingFileReaderTest, TestListValue) {
     physical_schema = arrow::schema(std::move(physical_fields));
 
     auto physical_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(physical_schema->fields()), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(physical_schema->fields()), R"([
         [1, [[0, 1], [1, null, 2], [3], null]],
         [2, [[2, 0], [5, 6], [7], null]],
         [3, null],
@@ -497,17 +486,15 @@ TEST_F(MapSharedShreddingFileReaderTest, TestListValue) {
                                     /*selection_bitmap=*/std::nullopt));
     ASSERT_OK_AND_ASSIGN(auto actual, ReadResultCollector::CollectResult(reader.get()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(
                     arrow::struct_(logical_schema->fields()), {R"([
                         [1, [["a", [1, null, 2]]]],
                         [2, [["a", [7]], ["c", [5, 6]]]],
                         [3, null],
                         [4, [["a", [9, 10]], ["c", [null]]]]
-                    ])"},
-                    &expected)
-                    .ok());
-    AssertChunkedArrayEquals(expected, actual);
+                    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    AssertChunkedArrayEquals(expected_array_result.ValueOrDie(), actual);
 }
 
 TEST_F(MapSharedShreddingFileReaderTest, TestOrcDictionaryEncodedStringValue) {
@@ -557,17 +544,16 @@ TEST_F(MapSharedShreddingFileReaderTest, TestOrcDictionaryEncodedStringValue) {
     ASSERT_OK(reader->SetReadSchema(read_schema.get(), /*predicate=*/nullptr,
                                     /*selection_bitmap=*/std::nullopt));
     ASSERT_OK_AND_ASSIGN(auto actual, ReadResultCollector::CollectResult(reader.get()));
-    std::shared_ptr<arrow::ChunkedArray> expected;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(
+
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(
                     arrow::struct_(logical_schema->fields()), {R"([
                         [1, [["a", "red"]]],
                         [2, [["a", "red"], ["c", "green"]]],
                         [3, null],
                         [4, [["a", "red"], ["c", null]]]
-                    ])"},
-                    &expected)
-                    .ok());
-    AssertChunkedArrayEquals(expected, actual);
+                    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    AssertChunkedArrayEquals(expected_array_result.ValueOrDie(), actual);
 }
 
 TEST_F(MapSharedShreddingFileReaderTest, TestReadsRealFormatFile) {
@@ -609,17 +595,15 @@ TEST_F(MapSharedShreddingFileReaderTest, TestReadsRealFormatFile) {
                                     /*selection_bitmap=*/std::nullopt));
     ASSERT_OK_AND_ASSIGN(auto actual, ReadResultCollector::CollectResult(reader.get()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(
                     arrow::struct_(logical_schema_->fields()), {R"([
                         [1, [["a", 1]]],
                         [2, [["a", 4], ["c", 3]]],
                         [3, null],
                         [4, [["a", 9], ["c", null]]]
-                    ])"},
-                    &expected)
-                    .ok());
-    AssertChunkedArrayEquals(expected, actual);
+                    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    AssertChunkedArrayEquals(expected_array_result.ValueOrDie(), actual);
 }
 
 }  // namespace paimon::test

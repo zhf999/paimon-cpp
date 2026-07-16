@@ -19,7 +19,7 @@
 #include "arrow/api.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/catalog/catalog.h"
 #include "paimon/common/factories/io_hook.h"
@@ -78,7 +78,7 @@ class LookupMergeTreeCompactRewriterTest : public ::testing::TestWithParam<std::
                                                    const CoreOptions& options,
                                                    const std::string& src_array_str) const {
         std::shared_ptr<arrow::Array> src_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(arrow_schema_->fields()),
+            arrow::json::ArrayFromJSONString(arrow::struct_(arrow_schema_->fields()),
                                                       src_array_str)
                 .ValueOrDie();
 
@@ -469,16 +469,12 @@ TEST_F(LookupMergeTreeCompactRewriterTest, TestFirstRowRewrite) {
     // check file content
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [0,  0,  1, 11],
 [3,  0,  2, 22],
 [1,  0,  3, 33],
 [2,  0,  5, 5]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, table_schema, "orc", expected_array);
 }
 
@@ -567,16 +563,12 @@ TEST_F(LookupMergeTreeCompactRewriterTest, TestWithFileFormatPerLevel) {
     // check file content
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [0,  0,  1, 11],
 [3,  0,  2, 22],
 [1,  0,  3, 33],
 [2,  0,  5, 5]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, table_schema, "parquet", expected_array);
 }
 
@@ -620,17 +612,13 @@ TEST_F(LookupMergeTreeCompactRewriterTest, TestRewriteWithAllHighLevel) {
     // check file content
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [0,  0,  1, 11],
 [1,  0,  3, 33],
 [2,  0,  5, 5],
 [3,  0,  8, 88],
 [4,  0,  9, 99]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, table_schema, "parquet", expected_array);
 }
 
@@ -676,15 +664,11 @@ TEST_F(LookupMergeTreeCompactRewriterTest, TestRewriteWithForceLookupAndSumAgg) 
     // check file content
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [6,  0,  2, 244],
 [4,  0,  4, 44],
 [7,  0,  5, 615]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, table_schema, "orc", expected_array);
 }
 
@@ -731,15 +715,11 @@ TEST_F(LookupMergeTreeCompactRewriterTest, TestRewriteWithDvAndDeduplicate) {
     // check file content
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [6,  0,  2, 222],
 [4,  0,  4, 44],
 [7,  0,  5, 555]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, table_schema, "orc", expected_array);
 
     // test dv
@@ -795,15 +775,11 @@ TEST_F(LookupMergeTreeCompactRewriterTest, TestRewriteWithDvAndAgg) {
     // check file content
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [6,  0,  2, 244],
 [4,  0,  4, 44],
 [7,  0,  5, 615]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, table_schema, "orc", expected_array);
 
     // test dv
@@ -952,14 +928,10 @@ TEST_F(LookupMergeTreeCompactRewriterTest, TestRewriteWithDvFactory) {
     // check file content
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [6,  0,  2, 222],
 [7,  0,  5, 555]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, table_schema, "orc", expected_array);
 
     // test dv
@@ -1030,15 +1002,11 @@ TEST_F(LookupMergeTreeCompactRewriterTest, TestIOException) {
         // check file content
         auto type_with_special_fields = arrow::struct_(
             SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-        std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status =
-            arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+        auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [6,  0,  2, 244],
 [4,  0,  4, 44],
 [7,  0,  5, 615]
-])"},
-                                                             &expected_array);
-        ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
         CheckResult(compact_file_name, table_schema, "orc", expected_array);
 
         // test dv
@@ -1215,16 +1183,12 @@ TEST_F(LookupMergeTreeCompactRewriterTest, TestRewriteLookupChangelogWithOutputL
     // check file content
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [0,  0,  1, 11],
 [2,  0,  2, 22],
 [1,  0,  3, 33],
 [3,  0,  4, 44]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, table_schema, "orc", expected_array);
 }
 
@@ -1281,15 +1245,11 @@ TEST_F(LookupMergeTreeCompactRewriterTest, TestRewriteWithDvAndAggForStringField
     // check file content
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [6,  0,  "2", "222"],
 [4,  0,  "4", "44"],
 [7,  0,  "5", "55"]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, table_schema, "orc", expected_array);
 
     // test dv
@@ -1336,15 +1296,11 @@ TEST_F(LookupMergeTreeCompactRewriterTest, TestRemoteLookupFileManagerAfterCompa
     // Check compact file content
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [6,  0,  2, 222],
 [4,  0,  4, 44],
 [7,  0,  5, 55]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, table_schema, "orc", expected_array);
 
     // Verify DV for file0 (key "5" was overridden by compact result)
@@ -1393,15 +1349,11 @@ TEST_F(LookupMergeTreeCompactRewriterTest, TestRemoteLookupFileWithExternalPath)
     // Check compact file content
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [6,  0,  2, 222],
 [4,  0,  4, 44],
 [7,  0,  5, 55]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, table_schema, "orc", expected_array);
 
     // Verify DV for file0 (key "5" was overridden by compact result)
@@ -1459,15 +1411,11 @@ TEST_F(LookupMergeTreeCompactRewriterTest, TestRemoteLookupFileWithSchemaEvoluti
     // Check compact file content
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [6,  0,  2, "222"],
 [4,  0,  4, "44"],
 [7,  0,  5, "55"]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, table_schema1, "orc", expected_array);
 
     // Verify DV for file0 (key "5" was overridden by compact result)
@@ -1518,15 +1466,11 @@ TEST_F(LookupMergeTreeCompactRewriterTest, TestRemoteLookupFileReadFailFallbackT
     // Check compact file content
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [6,  0,  2, 222],
 [4,  0,  4, 44],
 [7,  0,  5, 55]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, table_schema, "orc", expected_array);
 
     // Verify DV for file0 (key "5" was overridden by compact result)
@@ -1574,15 +1518,11 @@ TEST_P(LookupMergeTreeCompactRewriterTest, TestMultipleCompression) {
     // Check compact file content
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema_)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [6,  0,  2, 222],
 [4,  0,  4, 44],
 [7,  0,  5, 55]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, table_schema, "orc", expected_array);
 
     // Verify DV for file0 (key "5" was overridden by compact result)

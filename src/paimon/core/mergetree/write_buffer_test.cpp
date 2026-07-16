@@ -23,7 +23,7 @@
 #include "arrow/api.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/types/data_field.h"
 #include "paimon/common/utils/fields_comparator.h"
@@ -136,13 +136,13 @@ TEST_F(WriteBufferTest, TestFlushResetsStateAndAdvancesSequenceNumber) {
     auto write_buffer = CreateWriteBuffer(/*last_sequence_number=*/9, options);
 
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Alice", 10, 0, 13.1],
       ["Bob", 20, 1, 14.1]
     ])")
             .ValueOrDie();
     std::shared_ptr<arrow::Array> array2 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Charlie", 30, 2, 15.1]
     ])")
             .ValueOrDie();
@@ -180,7 +180,7 @@ TEST_F(WriteBufferTest, TestFlushPreservesRowKinds) {
     auto write_buffer = CreateWriteBuffer(/*last_sequence_number=*/-1, options);
 
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Alice", 10, 0, 13.1],
       ["Bob", 20, 1, 14.1],
       ["Charlie", 30, 2, 15.1],
@@ -217,7 +217,7 @@ TEST_F(WriteBufferTest, TestWriteRequestsFlushWriteBufferWhenSpillDisabled) {
     auto write_buffer = CreateWriteBuffer(/*last_sequence_number=*/-1, options);
 
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Alice", 10, 0, 13.1]
     ])")
             .ValueOrDie();
@@ -231,7 +231,7 @@ TEST_F(WriteBufferTest, TestWriteRequestsFlushWriteBufferWhenSpillDisabled) {
 
 TEST_F(WriteBufferTest, TestSpillDiskQuotaEnforcement) {
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
       ["Alice", 10, 0, 13.1]
     ])")
             .ValueOrDie();
@@ -290,7 +290,7 @@ TEST_F(WriteBufferTest, TestSpillDiskQuotaEnforcement) {
         auto write_buffer = CreateWriteBuffer(/*last_sequence_number=*/-1, options);
 
         std::shared_ptr<arrow::Array> array2 =
-            arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+            arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Bob", 20, 1, 14.1]
         ])")
                 .ValueOrDie();
@@ -332,7 +332,7 @@ TEST_F(WriteBufferTest, TestCreateReadersMergesSingleInMemoryReaderLocally) {
     auto write_buffer = CreateWriteBuffer(/*last_sequence_number=*/-1, options);
 
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
         ["Alice", 10, 0, 13.1],
         ["Alice", 20, 1, 14.1]
     ])")
@@ -361,12 +361,12 @@ TEST_F(WriteBufferTest, TestCreateReadersReturnsBothSpillAndMemoryReaders) {
         auto write_buffer = CreateWriteBuffer(/*last_sequence_number=*/-1, options);
 
         std::shared_ptr<arrow::Array> spill_array =
-            arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+            arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Alice", 10, 0, 13.1]
         ])")
                 .ValueOrDie();
         std::shared_ptr<arrow::Array> memory_array =
-            arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+            arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Alice", 20, 1, 14.1]
         ])")
                 .ValueOrDie();
@@ -396,14 +396,14 @@ TEST_F(WriteBufferTest, TestCreateReadersReturnsBothSpillAndMemoryReaders) {
         auto write_buffer = CreateWriteBuffer(/*last_sequence_number=*/-1, options);
 
         std::shared_ptr<arrow::Array> array1 =
-            arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+            arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Alice", 10, 0, 13.1],
             ["Bob", 20, 1, 14.1],
             ["Charlie", 30, 2, 15.1]
         ])")
                 .ValueOrDie();
         std::shared_ptr<arrow::Array> array2 =
-            arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+            arrow::json::ArrayFromJSONString(value_type_, R"([
             ["Diana", 40, 3, 16.1],
             ["Eve", 50, 4, 17.1],
             ["Frank", 60, 5, 18.1]
@@ -453,17 +453,17 @@ TEST_F(WriteBufferTest, TestSpillReaderReturnsDataInSortedOrder) {
     auto write_buffer = CreateWriteBuffer(/*last_sequence_number=*/-1, options);
 
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
         ["Charlie", 30, 2, 15.1]
     ])")
             .ValueOrDie();
     std::shared_ptr<arrow::Array> array2 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
         ["Bob", 20, 1, 14.1]
     ])")
             .ValueOrDie();
     std::shared_ptr<arrow::Array> array3 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
         ["Alice", 10, 0, 13.1]
     ])")
             .ValueOrDie();
@@ -496,7 +496,7 @@ TEST_F(WriteBufferTest, TestSpillReaderReturnsDataInSortedOrder) {
     auto write_buffer2 = CreateWriteBuffer(/*last_sequence_number=*/-1, options2);
 
     std::shared_ptr<arrow::Array> multi_row_array =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
         ["Charlie", 30, 2, 15.1],
         ["Alice", 10, 0, 13.1],
         ["Bob", 20, 1, 14.1]
@@ -547,7 +547,7 @@ TEST_F(WriteBufferTest, TestMergeSpilledFilesSkipsWithSingleFile) {
     auto write_buffer = CreateWriteBuffer(/*last_sequence_number=*/-1, options);
 
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
         ["Alice", 10, 0, 13.1]
     ])")
             .ValueOrDie();
@@ -576,7 +576,7 @@ TEST_F(WriteBufferTest, TestMultipleFlushWriteCyclesWorkCorrectly) {
     auto write_buffer = CreateWriteBuffer(/*last_sequence_number=*/-1, options);
 
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
         ["Alice", 10, 0, 13.1]
     ])")
             .ValueOrDie();
@@ -603,7 +603,7 @@ TEST_F(WriteBufferTest, TestMultipleFlushWriteCyclesWorkCorrectly) {
 
     // Cycle 2: Write after Clear
     std::shared_ptr<arrow::Array> array2 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
         ["Bob", 20, 1, 14.1],
         ["Charlie", 30, 2, 15.1]
     ])")
@@ -638,7 +638,7 @@ TEST_F(WriteBufferTest, TestMergeSpilledFilesDeduplicationAndRowKinds) {
     auto write_buffer = CreateWriteBuffer(/*last_sequence_number=*/-1, options);
 
     std::shared_ptr<arrow::Array> array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
         ["Alice", 10, 0, 13.1],
         ["Charlie", 30, 2, 15.1]
     ])")
@@ -653,7 +653,7 @@ TEST_F(WriteBufferTest, TestMergeSpilledFilesDeduplicationAndRowKinds) {
 
     // Bob(DELETE), Alice(UPDATE_AFTER) — cross-file overlap on Alice.
     std::shared_ptr<arrow::Array> array2 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
         ["Bob", 20, 1, 14.1],
         ["Alice", 40, 3, 16.1]
     ])")
@@ -667,7 +667,7 @@ TEST_F(WriteBufferTest, TestMergeSpilledFilesDeduplicationAndRowKinds) {
 
     // Diana(INSERT), Bob(INSERT) — overlap on Bob.
     std::shared_ptr<arrow::Array> array3 =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
         ["Diana", 50, 4, 17.1],
         ["Bob", 60, 5, 18.1]
     ])")
@@ -700,7 +700,7 @@ TEST_F(WriteBufferTest, TestSpillPreservesNullValues) {
     auto write_buffer = CreateWriteBuffer(/*last_sequence_number=*/-1, options);
 
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
         ["Alice", 10, 0, null],
         ["Bob", 20, 1, 14.1],
         ["Charlie", 30, 2, null]
@@ -749,7 +749,7 @@ TEST_F(WriteBufferTest, TestDestructorCleansUpSpillFiles) {
     auto write_buffer = CreateWriteBuffer(/*last_sequence_number=*/-1, options);
 
     std::shared_ptr<arrow::Array> array =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([
+        arrow::json::ArrayFromJSONString(value_type_, R"([
         ["Alice", 10, 0, 13.1],
         ["Bob", 20, 1, 14.1]
     ])")

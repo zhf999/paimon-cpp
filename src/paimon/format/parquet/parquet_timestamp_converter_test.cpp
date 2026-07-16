@@ -20,6 +20,7 @@
 
 #include "arrow/api.h"
 #include "arrow/ipc/api.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/utils/arrow/mem_utils.h"
 #include "paimon/common/utils/date_time_utils.h"
@@ -112,7 +113,7 @@ TEST(ParquetTimestampConverterTest, TestCastArrayForTimestamp) {
     };
 
     auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 [[["1970-01-01 00:00:01", "1970-01-01 00:00:00.000001"]], ["1970-01-01 00:00:02"], ["1970-01-01 00:00:02", "1970-01-01 00:00:00.000000002"], "1970-01-01 00:00:00.000000002"],
 [[["1970-01-01 00:00:03", "1970-01-01 00:00:00.000003"]], ["1970-01-01 00:00:04"], ["1970-01-01 00:00:04", "1970-01-01 00:00:00.000000004"], "1970-01-01 00:00:00.000000004"],
 [null, null, null, "1970-01-01 00:00:00.000000004"]
@@ -125,7 +126,7 @@ TEST(ParquetTimestampConverterTest, TestCastArrayForTimestamp) {
                              array, arrow::struct_(target_fields), pool));
 
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(target_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(target_fields), R"([
 [[["1970-01-01 00:00:01", "1970-01-01 00:00:00.000001"]], ["1970-01-01 00:00:02"], ["1970-01-01 00:00:02", "1970-01-01 00:00:00.000000002"], "1970-01-01 00:00:00.000000002"],
 [[["1970-01-01 00:00:03", "1970-01-01 00:00:00.000003"]], ["1970-01-01 00:00:04"], ["1970-01-01 00:00:04", "1970-01-01 00:00:00.000000004"], "1970-01-01 00:00:00.000000004"],
 [null, null, null, "1970-01-01 00:00:00.000000004"]

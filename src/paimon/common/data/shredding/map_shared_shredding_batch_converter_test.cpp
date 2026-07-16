@@ -23,7 +23,7 @@
 
 #include "arrow/array.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "arrow/type.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/shredding/map_shared_shredding_context.h"
@@ -35,7 +35,7 @@
 
 namespace paimon {
 
-using arrow::ipc::internal::json::ArrayFromJSON;
+using arrow::json::ArrayFromJSONString;
 
 class MapSharedShreddingBatchConverterTest : public ::testing::Test {
  protected:
@@ -46,7 +46,7 @@ class MapSharedShreddingBatchConverterTest : public ::testing::Test {
                                              const std::string& input_json,
                                              const std::shared_ptr<arrow::DataType>& physical_type,
                                              MapSharedShreddingBatchConverter* converter) {
-        auto input = ArrayFromJSON(logical_type, input_json).ValueOrDie();
+        auto input = ArrayFromJSONString(logical_type, input_json).ValueOrDie();
         ArrowArray c_input;
         EXPECT_TRUE(arrow::ExportArray(*input, &c_input).ok());
         EXPECT_OK_AND_ASSIGN(auto c_output, converter->Convert(&c_input));
@@ -98,7 +98,7 @@ TEST_F(MapSharedShreddingBatchConverterTest, BasicConversion) {
     // Expected physical: [id, [mapping, col0, col1, col2, overflow]]
     //   Row0: a=fid0->col0, b=fid1->col1, col2 unused
     //   Row1: b=fid1->col0, c=fid2->col1, a=fid0->col2
-    auto expected = ArrayFromJSON(physical_type, R"([
+    auto expected = ArrayFromJSONString(physical_type, R"([
         [100, [[0, 1, -1], 1, 2, null, null]],
         [200, [[1, 2, 0],  3, 4, 5,    null]]
     ])")
@@ -149,7 +149,7 @@ TEST_F(MapSharedShreddingBatchConverterTest, NestedValueStruct) {
     ])",
                              physical_type, converter.get());
 
-    auto expected = ArrayFromJSON(physical_type, R"([
+    auto expected = ArrayFromJSONString(physical_type, R"([
         [1, [[0, 1],  [1, 1.5],     [null, 2.5], null]],
         [2, [[2, -1], [3, 3.5],     null,         null]],
         [3, [[0, 2],  [null, null], [5, 5.5],     [[1, [6, 6.5]]]]],
@@ -199,7 +199,7 @@ TEST_F(MapSharedShreddingBatchConverterTest, NestedValueList) {
     ])",
                              physical_type, converter.get());
 
-    auto expected = ArrayFromJSON(physical_type, R"([
+    auto expected = ArrayFromJSONString(physical_type, R"([
         [1, [[0, 1],  [1, null, 2], [3],    null]],
         [2, [[0, -1], [null],       null,   null]],
         [3, [[2, -1], [5, 6, 7],    null,   null]],
@@ -250,7 +250,7 @@ TEST_F(MapSharedShreddingBatchConverterTest, NestedValueMap) {
     ])",
                              physical_type, converter.get());
 
-    auto expected = ArrayFromJSON(physical_type, R"([
+    auto expected = ArrayFromJSONString(physical_type, R"([
         [1, [[0, 1],  [["x", 1], ["y", null]], [["z", 3]],  null]],
         [2, [[2, -1], [["p", null]],            null,        null]],
         [3, null],
@@ -305,7 +305,7 @@ TEST_F(MapSharedShreddingBatchConverterTest, NestedComplex) {
     ])",
                              physical_type, converter.get());
 
-    auto expected = ArrayFromJSON(physical_type, R"([
+    auto expected = ArrayFromJSONString(physical_type, R"([
         [1, [[0, 1],  [10, ["t1", "t2"], [["x", 1]]], [20, ["t3"], [["y", 2], ["z", 3]]], null]],
         [2, [[2, -1], [null, null, [["p", null]]],     null,                                null]],
         [3, [[0, 1],  [30, [null, "t4"], []],          [null, [], [["q", 5]]],              [[2, [40, ["t5"], [["r", 6]]]]]]],
@@ -362,7 +362,7 @@ TEST_F(MapSharedShreddingBatchConverterTest, MultipleMapFields) {
     ])",
                              physical_type, converter.get());
 
-    auto expected = ArrayFromJSON(physical_type, R"([
+    auto expected = ArrayFromJSONString(physical_type, R"([
         [1, [[0, 1],  10, 20, null],            [[0, 1, -1], 1.1, 2.2, null, null]],
         [2, [[2, 0],  30, 40, [[1, 50]]],       [[2, -1, -1], 3.3, null, null, null]],
         [3, null,                                [[0, 1, 2], 4.4, 5.5, 6.6, [[3, 7.7]]]]
@@ -438,7 +438,7 @@ TEST_F(MapSharedShreddingBatchConverterTest, SequentialPlacementUsesSmallestColu
     ])",
                              physical_type, converter.get());
 
-    auto expected = ArrayFromJSON(physical_type, R"([
+    auto expected = ArrayFromJSONString(physical_type, R"([
         [100, [[0, 1, -1], 1, 2, null, null]],
         [200, [[0, 1, 2],  5, 3,    4, null]]
     ])")
@@ -477,7 +477,7 @@ TEST_F(MapSharedShreddingBatchConverterTest, LruPlacementPreservesResidentColumn
     ])",
                              physical_type, converter.get());
 
-    auto expected = ArrayFromJSON(physical_type, R"([
+    auto expected = ArrayFromJSONString(physical_type, R"([
         [1, [[0, 1, 2],  10,  20,  30, null]],
         [2, [[0, 1, -1], 40,  50, null, null]],
         [3, [[4, 5, 3],  70,  80,  60, null]],

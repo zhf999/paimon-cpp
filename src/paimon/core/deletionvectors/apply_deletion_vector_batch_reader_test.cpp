@@ -21,7 +21,7 @@
 
 #include "arrow/api.h"
 #include "arrow/array/array_nested.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/reader/prefetch_file_batch_reader_impl.h"
 #include "paimon/executor.h"
@@ -67,7 +67,7 @@ class ApplyDeletionVectorBatchReaderTest : public ::testing::Test,
 
     void CheckResult(const std::string& data_str, const std::vector<char>& dv_data,
                      const std::string& expected_str) {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(int_type_, data_str).ValueOrDie();
+        auto f1 = arrow::json::ArrayFromJSONString(int_type_, data_str).ValueOrDie();
         std::shared_ptr<arrow::Array> data =
             arrow::StructArray::Make({f1}, target_type_->fields()).ValueOrDie();
 
@@ -96,7 +96,7 @@ class ApplyDeletionVectorBatchReaderTest : public ::testing::Test,
                 CheckResult(apply_dv_batch_reader.get(), nullptr);
             } else {
                 auto expected =
-                    arrow::ipc::internal::json::ArrayFromJSON(int_type_, expected_str).ValueOrDie();
+                    arrow::json::ArrayFromJSONString(int_type_, expected_str).ValueOrDie();
                 std::shared_ptr<arrow::Array> expect_array =
                     arrow::StructArray::Make({expected}, target_type_->fields()).ValueOrDie();
                 auto expected_chunk_array = std::make_shared<arrow::ChunkedArray>(expect_array);

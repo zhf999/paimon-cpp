@@ -34,7 +34,7 @@
 #include "arrow/array/builder_primitive.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "arrow/type.h"
 #include "gtest/gtest.h"
 #include "paimon/commit_context.h"
@@ -298,7 +298,7 @@ class BlobTableInteTest : public testing::Test, public ::testing::WithParamInter
         data_str.pop_back();
         data_str.append("]");
         return std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), data_str)
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields), data_str)
                 .ValueOrDie());
     }
 
@@ -510,7 +510,7 @@ TEST_P(BlobTableInteTest, TestAppendTableWriteWithBlobAsDescriptorTrue) {
         ["str_3", null, "blob_data_3"]
     ])";
     auto raw_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), raw_json).ValueOrDie());
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), raw_json).ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto desc_array, ConvertRawBlobToDescriptor(raw_array, {"blob"}));
 
     // write descriptor array
@@ -550,7 +550,7 @@ TEST_P(BlobTableInteTest, TestAppendTableWriteWithBlobAsDescriptorFalse) {
         ["str_3", null, "dog"]
     ])";
     auto write_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), data_json).ValueOrDie());
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), data_json).ValueOrDie());
 
     auto schema = arrow::schema(fields);
     ASSERT_OK_AND_ASSIGN(auto commit_msgs,
@@ -569,7 +569,7 @@ TEST_P(BlobTableInteTest, TestBasic) {
     // write field: f0, f1, f2
     std::vector<std::string> write_cols0 = schema->field_names();
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "b"]
     ])")
             .ValueOrDie());
@@ -580,7 +580,7 @@ TEST_P(BlobTableInteTest, TestBasic) {
     // write field: f1, f2
     std::vector<std::string> write_cols1 = {"f1", "f2"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[1], fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[1], fields_[2]}), R"([
         ["new_blob", "c"]
     ])")
             .ValueOrDie());
@@ -588,7 +588,7 @@ TEST_P(BlobTableInteTest, TestBasic) {
     SetFirstRowId(/*reset_first_row_id=*/0, commit_msgs);
     ASSERT_OK(Commit(table_path, commit_msgs));
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "new_blob", "c"]
     ])")
             .ValueOrDie());
@@ -597,7 +597,7 @@ TEST_P(BlobTableInteTest, TestBasic) {
     if (GetParam() != "lance") {
         // read with row tracking
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({fields_[1], fields_[0], SpecialFields::SequenceNumber().field_,
                                 SpecialFields::RowId().field_, fields_[2]}),
                 R"([
@@ -618,7 +618,7 @@ TEST_P(BlobTableInteTest, TestMultipleAppends) {
     // write field: f0, f1, f2
     std::vector<std::string> write_cols0 = schema->field_names();
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "b"],
         [1, "a", "b"],
         [1, "a", "b"],
@@ -637,7 +637,7 @@ TEST_P(BlobTableInteTest, TestMultipleAppends) {
     // write field: f0, f1
     std::vector<std::string> write_cols1 = {"f0", "f1"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [1, "a"]
     ])")
             .ValueOrDie());
@@ -647,7 +647,7 @@ TEST_P(BlobTableInteTest, TestMultipleAppends) {
     // write field: f2
     std::vector<std::string> write_cols2 = {"f2"};
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["b"]
     ])")
             .ValueOrDie());
@@ -662,7 +662,7 @@ TEST_P(BlobTableInteTest, TestMultipleAppends) {
     // write field: f0, f1
     std::vector<std::string> write_cols3 = {"f0", "f1"};
     auto src_array3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [2, "c"]
     ])")
             .ValueOrDie());
@@ -673,7 +673,7 @@ TEST_P(BlobTableInteTest, TestMultipleAppends) {
     // write field: f2
     std::vector<std::string> write_cols4 = {"f2"};
     auto src_array4 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["d"]
     ])")
             .ValueOrDie());
@@ -682,7 +682,7 @@ TEST_P(BlobTableInteTest, TestMultipleAppends) {
     ASSERT_OK(Commit(table_path, commit_msgs4));
 
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "b"],
         [1, "a", "b"],
         [1, "a", "b"],
@@ -702,7 +702,7 @@ TEST_P(BlobTableInteTest, TestMultipleAppends) {
     if (GetParam() != "lance") {
         // read with row tracking
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({
+            arrow::json::ArrayFromJSONString(arrow::struct_({
                                                           fields_[0],
                                                           fields_[1],
                                                           fields_[2],
@@ -738,7 +738,7 @@ TEST_P(BlobTableInteTest, TestOnlySomeColumns) {
     // write field: f0
     std::vector<std::string> write_cols0 = {"f0"};
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0]}), R"([
         [1]
     ])")
             .ValueOrDie());
@@ -748,7 +748,7 @@ TEST_P(BlobTableInteTest, TestOnlySomeColumns) {
     // write field: f1
     std::vector<std::string> write_cols1 = {"f1"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[1]}), R"([
         ["a"]
     ])")
             .ValueOrDie());
@@ -765,7 +765,7 @@ TEST_P(BlobTableInteTest, TestMultipleAppendsDifferentFirstRowIds) {
     // write field: f0, f1
     std::vector<std::string> write_cols1 = {"f0", "f1"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [1, "a"]
     ])")
             .ValueOrDie());
@@ -775,7 +775,7 @@ TEST_P(BlobTableInteTest, TestMultipleAppendsDifferentFirstRowIds) {
     // write field: f2
     std::vector<std::string> write_cols2 = {"f2"};
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["b"]
     ])")
             .ValueOrDie());
@@ -791,7 +791,7 @@ TEST_P(BlobTableInteTest, TestMultipleAppendsDifferentFirstRowIds) {
     // write field: f0, f1
     std::vector<std::string> write_cols3 = {"f0", "f1"};
     auto src_array3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [2, "c"]
     ])")
             .ValueOrDie());
@@ -803,7 +803,7 @@ TEST_P(BlobTableInteTest, TestMultipleAppendsDifferentFirstRowIds) {
     // write field: f2
     std::vector<std::string> write_cols4 = {"f2"};
     auto src_array4 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["d"]
     ])")
             .ValueOrDie());
@@ -812,7 +812,7 @@ TEST_P(BlobTableInteTest, TestMultipleAppendsDifferentFirstRowIds) {
     ASSERT_OK(Commit(table_path, commit_msgs4));
 
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "b"],
         [2, "c", "d"]
     ])")
@@ -822,7 +822,7 @@ TEST_P(BlobTableInteTest, TestMultipleAppendsDifferentFirstRowIds) {
     if (GetParam() != "lance") {
         // read with row tracking
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({
+            arrow::json::ArrayFromJSONString(arrow::struct_({
                                                           fields_[0],
                                                           fields_[1],
                                                           fields_[2],
@@ -944,7 +944,7 @@ TEST_P(BlobTableInteTest, TestExternalPath) {
     // write field: f0, f1
     std::vector<std::string> write_cols0 = {"f0", "f1"};
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [1, "a"],
         [2, "c"]
     ])")
@@ -956,7 +956,7 @@ TEST_P(BlobTableInteTest, TestExternalPath) {
     // write field: f0, f2
     std::vector<std::string> write_cols1 = {"f0", "f2"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[2]}), R"([
         [10, "b"],
         [20, "d"]
     ])")
@@ -967,7 +967,7 @@ TEST_P(BlobTableInteTest, TestExternalPath) {
     ASSERT_OK(Commit(table_path, commit_msgs1));
 
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [10, "a", "b"],
         [20, "c", "d"]
     ])")
@@ -977,7 +977,7 @@ TEST_P(BlobTableInteTest, TestExternalPath) {
     if (GetParam() != "lance") {
         // read with row tracking
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({fields_[1], fields_[0], fields_[2], SpecialFields::RowId().field_,
                                 SpecialFields::SequenceNumber().field_}),
                 R"([
@@ -1009,7 +1009,7 @@ TEST_P(BlobTableInteTest, TestPartitionWithPredicate) {
     // write field: f0, f1 for partition f0 = "11"
     std::vector<std::string> write_cols0 = {"f0", "f1"};
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [11, "2024"],
         [11, "2025"],
         [11, "2026"]
@@ -1022,7 +1022,7 @@ TEST_P(BlobTableInteTest, TestPartitionWithPredicate) {
     // write field: f2 for partition f0 = "11"
     std::vector<std::string> write_cols1 = {"f2"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["a"],
         ["b"],
         ["c"]
@@ -1039,7 +1039,7 @@ TEST_P(BlobTableInteTest, TestPartitionWithPredicate) {
     // write field: f0, f1 for partition f0 = "22"
     std::vector<std::string> write_cols3 = {"f0", "f1"};
     auto src_array3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [22, "2027"],
         [22, "2028"],
         [22, "2029"]
@@ -1055,7 +1055,7 @@ TEST_P(BlobTableInteTest, TestPartitionWithPredicate) {
         auto equal = PredicateBuilder::Equal(/*field_index=*/2, /*field_name=*/"f2",
                                              FieldType::STRING, Literal(FieldType::STRING, "a", 1));
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [11, "2024", "a"],
         [11, "2025", "b"],
         [11, "2026", "c"],
@@ -1071,7 +1071,7 @@ TEST_P(BlobTableInteTest, TestPartitionWithPredicate) {
         auto equal = PredicateBuilder::Equal(/*field_index=*/0, /*field_name=*/"f0", FieldType::INT,
                                              Literal(11));
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [11, "2024", "a"],
         [11, "2025", "b"],
         [11, "2026", "c"]
@@ -1097,7 +1097,7 @@ TEST_P(BlobTableInteTest, TestPartitionWithPredicate) {
                                              Literal(11));
 
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({fields_[0], fields_[1], fields_[2], SpecialFields::RowId().field_,
                                 SpecialFields::SequenceNumber().field_}),
                 R"([
@@ -1124,7 +1124,7 @@ TEST_P(BlobTableInteTest, TestPredicate) {
     // write field: f0, f1, f2
     std::vector<std::string> write_cols0 = schema->field_names();
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "b"]
     ])")
             .ValueOrDie());
@@ -1135,7 +1135,7 @@ TEST_P(BlobTableInteTest, TestPredicate) {
     // write field: f2
     std::vector<std::string> write_cols1 = {"f2"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["c"]
     ])")
             .ValueOrDie());
@@ -1145,7 +1145,7 @@ TEST_P(BlobTableInteTest, TestPredicate) {
     {
         // test no predicate
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "c"]
     ])")
                 .ValueOrDie());
@@ -1157,7 +1157,7 @@ TEST_P(BlobTableInteTest, TestPredicate) {
             PredicateBuilder::NotEqual(/*field_index=*/2, /*field_name=*/"f2", FieldType::STRING,
                                        Literal(FieldType::STRING, "b", 1));
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "c"]
     ])")
                 .ValueOrDie());
@@ -1201,7 +1201,7 @@ TEST_P(BlobTableInteTest, TestIOException) {
         // write field: f0, f1, f2
         std::vector<std::string> write_cols0 = schema->field_names();
         auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [10, "a", "b"],
         [20, "aa", "bb"],
         [23, "aaa", "bbb"]
@@ -1214,7 +1214,7 @@ TEST_P(BlobTableInteTest, TestIOException) {
         // write field: f2, f0
         std::vector<std::string> write_cols1 = {"f2", "f0"};
         auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2], fields_[0]}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2], fields_[0]}), R"([
             ["c", 100],
             ["cc", 200],
             ["ccc", 300]
@@ -1233,7 +1233,7 @@ TEST_P(BlobTableInteTest, TestIOException) {
     // scan and read with I / O exception
     bool read_run_complete = false;
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(
+        arrow::json::ArrayFromJSONString(
             arrow::struct_({fields_[1], fields_[0], SpecialFields::SequenceNumber().field_,
                             SpecialFields::RowId().field_, fields_[2]}),
             R"([
@@ -1273,7 +1273,7 @@ TEST_P(BlobTableInteTest, TestReadTableWithDenseStats) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(read_fields);
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type, R"([
         ["Lily", 2, 102, 2.1, 0, 2],
         ["Alice", 4, 104, 3.1, 1, 2]
     ])")
@@ -1346,7 +1346,7 @@ TEST_P(BlobTableInteTest, TestDataEvolutionAndAlterTable) {
     {
         // only read blob column
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({BlobUtils::ToArrowField("blob")}), R"([
             ["Lily"],
             ["Alice"],
@@ -1364,7 +1364,7 @@ TEST_P(BlobTableInteTest, TestDataEvolutionAndAlterTable) {
     }
     {
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
 ["1970-01-05T00:00", 0, 1, 100, "2024-11-26 06:38:56.001000001", "0.020", true, "Lily", null, 0, 1],
 ["1969-11-18T00:00", 0, 1, 110, "2024-11-26 06:38:56.011000011", "11.120", true, "Alice", null, 1, 1],
 ["1971-03-21T00:00", 0, 1, 120, "2024-11-26 06:38:56.021000021", "22.220", false, "Bob", null, 2, 1],
@@ -1386,7 +1386,7 @@ TEST_P(BlobTableInteTest, TestDataEvolutionAndAlterTable) {
         auto predicate = PredicateBuilder::GreaterThan(/*field_index=*/3, /*field_name=*/"f3",
                                                        FieldType::INT, Literal(200));
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
 ["1970-01-05T00:00", 0, 1, 100, "2024-11-26 06:38:56.001000001", "0.020", true, "Lily", null, 0, 1],
 ["1969-11-18T00:00", 0, 1, 110, "2024-11-26 06:38:56.011000011", "11.120", true, "Alice", null, 1, 1],
 ["1971-03-21T00:00", 0, 1, 120, "2024-11-26 06:38:56.021000021", "22.220", false, "Bob", null, 2, 1],
@@ -1403,7 +1403,7 @@ TEST_P(BlobTableInteTest, TestDataEvolutionAndAlterTable) {
         auto predicate =
             PredicateBuilder::IsNotNull(/*field_index=*/8, /*field_name=*/"f6", FieldType::INT);
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
 ["1970-01-05T00:00", 0, 1, 100, "2024-11-26 06:38:56.001000001", "0.020", true, "Lily", null, 0, 1],
 ["1969-11-18T00:00", 0, 1, 110, "2024-11-26 06:38:56.011000011", "11.120", true, "Alice", null, 1, 1],
 ["1971-03-21T00:00", 0, 1, 120, "2024-11-26 06:38:56.021000021", "22.220", false, "Bob", null, 2, 1],
@@ -1440,7 +1440,7 @@ TEST_P(BlobTableInteTest, TestWithRowIdsSimple) {
     ASSERT_OK(Commit(table_path, commit_msgs));
 
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [10, "a10", "b10"],
         [999, "a999", "b999"]
     ])")
@@ -1467,7 +1467,7 @@ TEST_P(BlobTableInteTest, TestWithRowIdsForMultipleBlobFiles) {
     // target blob size is 80, therefore, each 4 rows in blob will be in one file
     std::vector<std::string> write_cols = {"f0", "f1", "f2"};
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [0, "aaa0", "b0"],
         [1, "aaa1", "b1"],
         [2, "aaa2", "b2"],
@@ -1487,7 +1487,7 @@ TEST_P(BlobTableInteTest, TestWithRowIdsForMultipleBlobFiles) {
 
     {
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "aaa1", "b1"],
         [8, "aaa8", "b8"]
     ])")
@@ -1498,7 +1498,7 @@ TEST_P(BlobTableInteTest, TestWithRowIdsForMultipleBlobFiles) {
     }
     {
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "aaa1", "b1"],
         [5, "aaa5", "b5"]
     ])")
@@ -1509,7 +1509,7 @@ TEST_P(BlobTableInteTest, TestWithRowIdsForMultipleBlobFiles) {
     }
     {
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [5, "aaa5", "b5"],
         [6, "aaa6", "b6"],
         [8, "aaa8", "b8"]
@@ -1521,7 +1521,7 @@ TEST_P(BlobTableInteTest, TestWithRowIdsForMultipleBlobFiles) {
     }
     {
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [5, "aaa5", "b5"],
         [7, "aaa7", "b7"]
     ])")
@@ -1535,7 +1535,7 @@ TEST_P(BlobTableInteTest, TestWithRowIdsForMultipleBlobFiles) {
         auto predicate = PredicateBuilder::Equal(/*field_index=*/0, /*field_name=*/"f0",
                                                  FieldType::INT, Literal(5));
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "aaa1", "b1"],
         [5, "aaa5", "b5"]
     ])")
@@ -1546,7 +1546,7 @@ TEST_P(BlobTableInteTest, TestWithRowIdsForMultipleBlobFiles) {
     {
         // test not read blob field
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[1]}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({fields_[1]}), R"([
         ["aaa1"],
         ["aaa8"]
     ])")
@@ -1576,7 +1576,7 @@ TEST_P(BlobTableInteTest, TestAppendTableWriteWithMultipleBlobFields) {
         ["str_2", 2,    "cat",    "black"]
     ])";
     auto write_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), data_json).ValueOrDie());
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), data_json).ValueOrDie());
 
     auto schema = arrow::schema(fields);
     ASSERT_OK_AND_ASSIGN(auto commit_msgs,
@@ -1605,7 +1605,7 @@ TEST_P(BlobTableInteTest, TestAppendWriteWithNullBlob) {
         [3, "world"]
     ])";
     auto write_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), data_json).ValueOrDie());
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), data_json).ValueOrDie());
 
     auto schema = arrow::schema(fields);
     ASSERT_OK_AND_ASSIGN(auto commit_msgs,
@@ -1665,7 +1665,7 @@ TEST_P(BlobTableInteTest, TestReadTableWithMultiBlobFields) {
         }
         json_str += "]";
         return std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, json_str).ValueOrDie());
+            arrow::json::ArrayFromJSONString(arrow_data_type, json_str).ValueOrDie());
     };
 
     // Full scan: all 10 rows
@@ -1711,7 +1711,7 @@ TEST_P(BlobTableInteTest, TestBlobDescriptorField) {
         [3, "image_data_2", "video_data_2"]
     ])";
     auto raw_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), raw_json).ValueOrDie());
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), raw_json).ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto desc_array, ConvertRawBlobToDescriptor(raw_array, {"b0", "b1"}));
 
     // write descriptor array
@@ -1770,7 +1770,7 @@ TEST_P(BlobTableInteTest, TestBlobDescriptorFieldPartialInline) {
         [3, "img_2", null,    "raw_2_2", "raw_3_2" ]
     ])";
     auto raw_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), raw_json).ValueOrDie());
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), raw_json).ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto desc_array,
                          ConvertRawBlobToDescriptor(raw_array, {"b0", "b1", "b2", "b3"}));
 
@@ -1832,7 +1832,7 @@ TEST_P(BlobTableInteTest, TestBlobDescriptorMultiCommitAndShuffledReadSchema) {
         [2, "img_1", "vid_1", "raw_2_1", null      ]
     ])";
     auto raw_array_1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), raw_json_1).ValueOrDie());
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), raw_json_1).ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto desc_array_1, ConvertRawBlobToDescriptor(raw_array_1, {"b0", "b1"}));
     ASSERT_OK_AND_ASSIGN(auto commit_msgs_1,
                          WriteArray(table_path, {}, schema->field_names(), {desc_array_1}));
@@ -1844,7 +1844,7 @@ TEST_P(BlobTableInteTest, TestBlobDescriptorMultiCommitAndShuffledReadSchema) {
         [4, null,    "vid_3", "raw_2_3", "raw_3_3"]
     ])";
     auto raw_array_2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), raw_json_2).ValueOrDie());
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), raw_json_2).ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto desc_array_2, ConvertRawBlobToDescriptor(raw_array_2, {"b0", "b1"}));
     ASSERT_OK_AND_ASSIGN(auto commit_msgs_2,
                          WriteArray(table_path, {}, schema->field_names(), {desc_array_2}));
@@ -1856,7 +1856,7 @@ TEST_P(BlobTableInteTest, TestBlobDescriptorMultiCommitAndShuffledReadSchema) {
         [6, "img_5", "vid_5", null,      "raw_3_5"]
     ])";
     auto raw_array_3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), raw_json_3).ValueOrDie());
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), raw_json_3).ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto desc_array_3, ConvertRawBlobToDescriptor(raw_array_3, {"b0", "b1"}));
     ASSERT_OK_AND_ASSIGN(auto commit_msgs_3,
                          WriteArray(table_path, {}, schema->field_names(), {desc_array_3}));
@@ -1889,7 +1889,7 @@ TEST_P(BlobTableInteTest, TestBlobDescriptorMultiCommitAndShuffledReadSchema) {
         ["raw_3_5", null,      "vid_5", "img_5", 6]
     ])";
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(shuffled_fields),
+            arrow::json::ArrayFromJSONString(arrow::struct_(shuffled_fields),
                                                       expected_json)
                 .ValueOrDie());
 
@@ -1922,7 +1922,7 @@ TEST_P(BlobTableInteTest, TestBlobDescriptorMultiCommitAndShuffledReadSchema) {
         ["raw_3_5", null,      "vid_5", "img_5", 6]
     ])";
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(shuffled_fields),
+            arrow::json::ArrayFromJSONString(arrow::struct_(shuffled_fields),
                                                       expected_json)
                 .ValueOrDie());
 
@@ -1959,7 +1959,7 @@ TEST_P(BlobTableInteTest, TestSharedShreddingWithBlobDataEvolution) {
     std::string table_path = PathUtil::JoinPath(dir_->Str(), "foo.db/bar");
 
     auto map_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields[0], fields[1]}),
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields[0], fields[1]}),
                                                   R"([
                 [1, [["a", 10], ["z", 11]]],
                 [2, [["a", 20]]],
@@ -1970,7 +1970,7 @@ TEST_P(BlobTableInteTest, TestSharedShreddingWithBlobDataEvolution) {
     ASSERT_OK(Commit(table_path, map_msgs));
 
     auto blob_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields[0], fields[2]}),
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields[0], fields[2]}),
                                                   R"([
                 [1, "payload-1"],
                 [2, "payload-2"],
@@ -1983,7 +1983,7 @@ TEST_P(BlobTableInteTest, TestSharedShreddingWithBlobDataEvolution) {
     ASSERT_OK(Commit(table_path, blob_msgs));
 
     auto expected = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields),
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields),
                                                   R"([
                 [1, [["a", 10], ["z", 11]], "payload-1"],
                 [2, [["a", 20]], "payload-2"],
@@ -2021,7 +2021,7 @@ TEST_P(BlobTableInteTest, TestMultipleSharedShreddingMapsWithBlobDataEvolution) 
     std::string table_path = PathUtil::JoinPath(dir_->Str(), "foo.db/bar");
 
     auto f0_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields[0], fields[1]}),
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields[0], fields[1]}),
                                                   R"([
                 [1, [["a", 10], ["z", 11]]],
                 [2, [["a", 20]]],
@@ -2032,7 +2032,7 @@ TEST_P(BlobTableInteTest, TestMultipleSharedShreddingMapsWithBlobDataEvolution) 
     ASSERT_OK(Commit(table_path, f0_msgs));
 
     auto f1_blob_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields[2], fields[3]}),
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields[2], fields[3]}),
                                                   R"([
                 [[["b", "red"], ["y", "blue"]], "payload-1"],
                 [[["b", "green"]], "payload-2"],
@@ -2045,7 +2045,7 @@ TEST_P(BlobTableInteTest, TestMultipleSharedShreddingMapsWithBlobDataEvolution) 
     ASSERT_OK(Commit(table_path, f1_blob_msgs));
 
     auto expected = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields),
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields),
                                                   R"([
                 [1, [["a", 10], ["z", 11]], [["b", "red"], ["y", "blue"]], "payload-1"],
                 [2, [["a", 20]], [["b", "green"]], "payload-2"],
@@ -2080,7 +2080,7 @@ TEST_P(BlobTableInteTest, TestSharedShreddingMapOverrideWithBlobDataEvolution) {
     std::string table_path = PathUtil::JoinPath(dir_->Str(), "foo.db/bar");
 
     auto old_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields),
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields),
                                                   R"([
                 [1, [["a", 10], ["z", 11]], "payload-1"],
                 [2, [["a", 20]], "payload-2"],
@@ -2093,7 +2093,7 @@ TEST_P(BlobTableInteTest, TestSharedShreddingMapOverrideWithBlobDataEvolution) {
     ASSERT_OK(Commit(table_path, old_msgs));
 
     auto new_map_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields[1]}),
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields[1]}),
                                                   R"([
                 [[["a", 100], ["z", 101]]],
                 [null],
@@ -2105,7 +2105,7 @@ TEST_P(BlobTableInteTest, TestSharedShreddingMapOverrideWithBlobDataEvolution) {
     ASSERT_OK(Commit(table_path, new_map_msgs));
 
     auto expected = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields),
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields),
                                                   R"([
                 [1, [["a", 100], ["z", 101]], "payload-1"],
                 [2, null, "payload-2"],
@@ -2140,7 +2140,7 @@ TEST_P(BlobTableInteTest, TestOrcMapStorageLayoutEvolutionWithBlobDataEvolution)
     std::string table_path = PathUtil::JoinPath(dir_->Str(), "foo.db/bar");
 
     auto array_v0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields),
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields),
                                                   R"([
                 [1, [["a", "red"], ["z", "blue"]], "payload-1"],
                 [2, [["a", "red"], ["z", "green"]], "payload-2"]
@@ -2158,7 +2158,7 @@ TEST_P(BlobTableInteTest, TestOrcMapStorageLayoutEvolutionWithBlobDataEvolution)
         /*highest_field_id=*/2, options_v1));
 
     auto array_v1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields),
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields),
                                                   R"([
                 [3, [["a", "red"], ["z", "yellow"]], "payload-3"],
                 [4, [["a", "red"]], "payload-4"]
@@ -2169,7 +2169,7 @@ TEST_P(BlobTableInteTest, TestOrcMapStorageLayoutEvolutionWithBlobDataEvolution)
     ASSERT_OK(Commit(table_path, msgs_v1));
 
     auto expected = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields),
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields),
                                                   R"([
                 [1, [["a", "red"], ["z", "blue"]], "payload-1"],
                 [2, [["a", "red"], ["z", "green"]], "payload-2"],
@@ -2213,7 +2213,7 @@ TEST_P(BlobTableInteTest, TestDataEvolutionWithBlobDescriptorField) {
     ])";
     arrow::FieldVector file_a1_fields = {fields[0], fields[3], fields[4]};
     auto file_a1_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(file_a1_fields), file_a1_json)
+        arrow::json::ArrayFromJSONString(arrow::struct_(file_a1_fields), file_a1_json)
             .ValueOrDie());
 
     std::string file_b1_json = R"([
@@ -2223,7 +2223,7 @@ TEST_P(BlobTableInteTest, TestDataEvolutionWithBlobDescriptorField) {
     ])";
     arrow::FieldVector file_b1_fields = {fields[0], fields[1], fields[2]};
     auto file_b1_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(file_b1_fields), file_b1_json)
+        arrow::json::ArrayFromJSONString(arrow::struct_(file_b1_fields), file_b1_json)
             .ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto file_b1_desc,
                          ConvertRawBlobToDescriptor(file_b1_array, {"b0", "b1"}));
@@ -2246,7 +2246,7 @@ TEST_P(BlobTableInteTest, TestDataEvolutionWithBlobDescriptorField) {
     ])";
     arrow::FieldVector file_a2_fields = {fields[0], fields[1], fields[2], fields[4]};
     auto file_a2_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(file_a2_fields), file_a2_json)
+        arrow::json::ArrayFromJSONString(arrow::struct_(file_a2_fields), file_a2_json)
             .ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto file_a2_desc,
                          ConvertRawBlobToDescriptor(file_a2_array, {"b0", "b1"}));
@@ -2258,7 +2258,7 @@ TEST_P(BlobTableInteTest, TestDataEvolutionWithBlobDescriptorField) {
     ])";
     arrow::FieldVector file_b2_fields = {fields[1], fields[2], fields[4]};
     auto file_b2_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(file_b2_fields), file_b2_json)
+        arrow::json::ArrayFromJSONString(arrow::struct_(file_b2_fields), file_b2_json)
             .ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto file_b2_desc,
                          ConvertRawBlobToDescriptor(file_b2_array, {"b0", "b1"}));
@@ -2294,7 +2294,7 @@ TEST_P(BlobTableInteTest, TestDataEvolutionWithBlobDescriptorField) {
         [6, "img_5", null,    null,      null      ]
     ])";
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), expected_json)
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), expected_json)
             .ValueOrDie());
 
     // Resolve descriptors back to raw bytes
@@ -2329,7 +2329,7 @@ TEST_P(BlobTableInteTest, TestBlobDescriptorFieldWriteRawBytesDirectly) {
         [3, "image_data_2", "video_data_2"]
     ])";
     auto raw_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), raw_json).ValueOrDie());
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), raw_json).ValueOrDie());
 
     auto schema = arrow::schema(fields);
     ASSERT_NOK_WITH_MSG(WriteArray(table_path, {}, schema->field_names(), {raw_array}),
@@ -2382,7 +2382,7 @@ TEST_P(BlobTableInteTest, TestBlobViewFieldWithUpstreamTable) {
     }
     std::shared_ptr<arrow::Array> write_view_array;
     ASSERT_TRUE(view_builder.Finish(&write_view_array).ok());
-    auto write_f0_array = arrow::ipc::internal::json::ArrayFromJSON(
+    auto write_f0_array = arrow::json::ArrayFromJSONString(
                               arrow::int32(), R"([100,101,102,103,104,105,106,107])")
                               .ValueOrDie();
     auto write_struct = std::dynamic_pointer_cast<arrow::StructArray>(
@@ -2424,7 +2424,7 @@ TEST_P(BlobTableInteTest, TestBlobViewFieldWithUpstreamTable) {
 ])";
     // clang-format on
     auto expected_struct = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), expected_json)
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), expected_json)
             .ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto expected_with_rk, PrependRowKindColumn(expected_struct));
 
@@ -2454,7 +2454,7 @@ TEST_P(BlobTableInteTest, TestBlobViewFieldWithUpstreamTable) {
 ])";
         // clang-format on
         auto range_expected_struct = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), range_json)
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields), range_json)
                 .ValueOrDie());
         ASSERT_OK_AND_ASSIGN(auto range_expected_with_rk,
                              PrependRowKindColumn(range_expected_struct));
@@ -2490,7 +2490,7 @@ TEST_P(BlobTableInteTest, TestBlobViewFieldWithUpstreamTable) {
 ])";
         // clang-format on
         auto pred_expected_struct = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), pred_json)
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields), pred_json)
                 .ValueOrDie());
         ASSERT_OK_AND_ASSIGN(auto pred_expected_with_rk,
                              PrependRowKindColumn(pred_expected_struct));
@@ -2562,7 +2562,7 @@ TEST_P(BlobTableInteTest, TestForwardBlobViewReference) {
     }
     std::shared_ptr<arrow::Array> write_view_array;
     ASSERT_TRUE(view_builder.Finish(&write_view_array).ok());
-    auto write_f0_array = arrow::ipc::internal::json::ArrayFromJSON(
+    auto write_f0_array = arrow::json::ArrayFromJSONString(
                               arrow::int32(), R"([100,101,102,103,104,105,106,107])")
                               .ValueOrDie();
     auto write_struct = std::dynamic_pointer_cast<arrow::StructArray>(
@@ -2652,7 +2652,7 @@ TEST_P(BlobTableInteTest, TestForwardBlobViewReference) {
 ])";
     // clang-format on
     auto expected_struct = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), expected_json)
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), expected_json)
             .ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto expected_with_rk, PrependRowKindColumn(expected_struct));
     ASSERT_TRUE(resolved->Equals(expected_with_rk))
@@ -2702,7 +2702,7 @@ TEST_P(BlobTableInteTest, TestBlobViewFieldWithUpstreamDescriptorBlob) {
 [3, "b0_data_3", "b1_data_3"]
 ])";
     auto upstream_raw_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(upstream_fields),
+        arrow::json::ArrayFromJSONString(arrow::struct_(upstream_fields),
                                                   upstream_raw_json)
             .ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto upstream_desc_array,
@@ -2750,7 +2750,7 @@ TEST_P(BlobTableInteTest, TestBlobViewFieldWithUpstreamDescriptorBlob) {
     ASSERT_TRUE(view_builder.Finish(&write_view_array).ok());
 
     auto write_f0_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), R"([100,101,102,103])")
+        arrow::json::ArrayFromJSONString(arrow::int32(), R"([100,101,102,103])")
             .ValueOrDie();
     auto write_struct = std::dynamic_pointer_cast<arrow::StructArray>(
         arrow::StructArray::Make(arrow::ArrayVector({write_f0_array, write_view_array}),
@@ -2779,7 +2779,7 @@ TEST_P(BlobTableInteTest, TestBlobViewFieldWithUpstreamDescriptorBlob) {
 [103, "b1_data_3"]
 ])";
     auto expected_struct = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), expected_json)
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), expected_json)
             .ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto expected_with_rk, PrependRowKindColumn(expected_struct));
     ASSERT_TRUE(result_array->Equals(expected_with_rk))
@@ -2890,7 +2890,7 @@ TEST_P(BlobTableInteTest, TestBlobViewFieldWithMultipleUpstreamTables) {
     std::shared_ptr<arrow::Array> write_view2_array;
     ASSERT_TRUE(view2_builder.Finish(&write_view2_array).ok());
 
-    auto write_f0_array = arrow::ipc::internal::json::ArrayFromJSON(
+    auto write_f0_array = arrow::json::ArrayFromJSONString(
                               arrow::int32(), R"([100,101,102,103,104,105,106,107])")
                               .ValueOrDie();
     auto write_struct = std::dynamic_pointer_cast<arrow::StructArray>(
@@ -2940,7 +2940,7 @@ TEST_P(BlobTableInteTest, TestBlobViewFieldWithMultipleUpstreamTables) {
 ])";
     // clang-format on
     auto expected_struct = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(expected_fields), expected_json)
+        arrow::json::ArrayFromJSONString(arrow::struct_(expected_fields), expected_json)
             .ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto expected_with_rk, PrependRowKindColumn(expected_struct));
 
@@ -2985,7 +2985,7 @@ TEST_P(BlobTableInteTest, TestBlobViewFailsWhenBothPathsAbsent) {
     std::shared_ptr<arrow::Array> write_view_array;
     ASSERT_TRUE(view_builder.Finish(&write_view_array).ok());
     auto write_f0_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), R"([100])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int32(), R"([100])").ValueOrDie();
     auto write_struct = std::dynamic_pointer_cast<arrow::StructArray>(
         arrow::StructArray::Make(arrow::ArrayVector({write_f0_array, write_view_array}),
                                  std::vector<std::string>({"f0", "view"}))
@@ -3044,7 +3044,7 @@ TEST_P(BlobTableInteTest, TestBlobViewWithFallbackPath) {
         // Write data to the temp table.
         std::string raw_json = R"([[0, "hello"], [1, "world"]])";
         auto raw_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(upstream_fields), raw_json)
+            arrow::json::ArrayFromJSONString(arrow::struct_(upstream_fields), raw_json)
                 .ValueOrDie());
         ASSERT_OK_AND_ASSIGN(auto desc_array, ConvertRawBlobToDescriptor(raw_array, {"blob"}));
         ASSERT_OK_AND_ASSIGN(
@@ -3085,7 +3085,7 @@ TEST_P(BlobTableInteTest, TestBlobViewWithFallbackPath) {
     std::shared_ptr<arrow::Array> write_view_array;
     ASSERT_TRUE(view_builder.Finish(&write_view_array).ok());
     auto write_f0_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), R"([100, 101])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int32(), R"([100, 101])").ValueOrDie();
     auto write_struct = std::dynamic_pointer_cast<arrow::StructArray>(
         arrow::StructArray::Make(arrow::ArrayVector({write_f0_array, write_view_array}),
                                  std::vector<std::string>({"f0", "view"}))
@@ -3108,7 +3108,7 @@ TEST_P(BlobTableInteTest, TestBlobViewWithFallbackPath) {
 
     std::string expected_json = R"([[100, "hello"], [101, "world"]])";
     auto expected_struct = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), expected_json)
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), expected_json)
             .ValueOrDie());
     ASSERT_OK_AND_ASSIGN(auto expected_with_rk, PrependRowKindColumn(expected_struct));
     ASSERT_TRUE(result_array->Equals(expected_with_rk))
@@ -3135,7 +3135,7 @@ TEST_P(BlobTableInteTest, TestReadBlobDescriptorFieldFromJava) {
         [3, "img_2", null,    "raw_2_2", "raw_3_2" ]
     ])";
     auto raw_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), raw_json).ValueOrDie());
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), raw_json).ValueOrDie());
 
     ASSERT_OK_AND_ASSIGN(auto plan, ScanTable(table_path));
     std::map<std::string, std::string> read_options = {{Options::BLOB_AS_DESCRIPTOR, "false"}};

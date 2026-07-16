@@ -22,7 +22,7 @@
 
 #include "arrow/api.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/types/data_field.h"
 #include "paimon/common/types/row_kind.h"
@@ -179,7 +179,7 @@ TEST_F(SortBufferTest, TestInMemorySortBufferEstimateMemoryUse) {
             arrow::field("f0", arrow::utf8()), arrow::field("f1", arrow::int32()),
             arrow::field("f2", arrow::int32()), arrow::field("f3", arrow::float64())};
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
           ["Lucy", 20, 1, 14.1],
           ["Paul", 20, 1, null],
           ["Alice", 10, 0, 13.1]
@@ -205,7 +205,7 @@ TEST_F(SortBufferTest, TestInMemorySortBufferEstimateMemoryUse) {
                                      arrow::field("v11", arrow::binary())};
 
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         [true, 10, 200, 65536, 123456789, 0.0, 0.0, 2000, -86399999999500, "2134.48690000000000000009", "difference", "Alice"],
         [false, -128, -32768, -2147483648, -9223372036854775808, -3.4028235E38, -1.7976931348623157E308, -719528, -9223372036854775808, "-999999999999999999.99999999999999999999", "Alice", "Two"],
         [true, 127, 32767, 2147483647, 9223372036854775807, 3.4028235E38, 1.7976931348623157E308, 2932896, 9223372036854775807, "999999999999999999.99999999999999999999", "Alice", "made"],
@@ -228,7 +228,7 @@ TEST_F(SortBufferTest, TestInMemorySortBufferEstimateMemoryUse) {
                                                arrow::field("sub3", arrow::boolean())})),
         };
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         [[1, 2, 3],    [["apple", 3], ["banana", 4]],          [10, 10.1, false]],
         [[4, 5],       [["cat", 5], ["dog", 6], ["mouse", 7]], [20, 20.1, true]],
         [[6],          [["elephant", 7], ["fox", 8]],          [null, 30.1, true]]
@@ -306,7 +306,7 @@ TEST_F(SortBufferTest, TestInMemorySortBufferEstimateMemoryUseForEachRow) {
 
     // Verify behavior when writing an empty batch.
     std::shared_ptr<arrow::Array> empty_array =
-        arrow::ipc::internal::json::ArrayFromJSON(value_type_, R"([])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(value_type_, R"([])").ValueOrDie();
     ::ArrowArray c_array;
     ASSERT_TRUE(arrow::ExportArray(*empty_array, &c_array).ok());
     RecordBatchBuilder batch_builder(&c_array);

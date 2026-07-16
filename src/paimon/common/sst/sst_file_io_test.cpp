@@ -24,7 +24,6 @@
 #include "arrow/array/builder_binary.h"
 #include "arrow/array/builder_nested.h"
 #include "arrow/array/builder_primitive.h"
-#include "arrow/ipc/json_simple.h"
 #include "gtest/gtest.h"
 #include "paimon/common/factories/io_hook.h"
 #include "paimon/common/lookup/sort/sort_lookup_store_footer.h"

@@ -389,7 +389,7 @@ TEST_P(AppendCompactionInteTest, TestAppendTableStreamWriteFullCompactionWithMap
             arrow::field("id", arrow::int32()),
             arrow::field("tags", map_type),
         });
-        auto expected = arrow::ipc::internal::json::ArrayFromJSON(expected_type, R"([
+        auto expected = arrow::json::ArrayFromJSONString(expected_type, R"([
         [0, 1, [["a", 10]]],
         [0, 2, []],
         [0, 3, [["a", 40]]],

@@ -26,8 +26,7 @@
 #include "arrow/api.h"
 #include "arrow/array/array_base.h"
 #include "arrow/c/abi.h"
-#include "arrow/ipc/json_simple.h"
-#include "arrow/util/string_builder.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/binary_row.h"
 #include "paimon/common/factories/io_hook.h"
@@ -108,9 +107,8 @@ class ReadInteWithIndexTest : public testing::Test,
                               const std::shared_ptr<Split> split) const {
         {
             // test with non predicate
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1],
 [0, "Emily", 10, 0, 13.1],
@@ -119,10 +117,9 @@ class ReadInteWithIndexTest : public testing::Test,
 [0, "Bob", 10, 1, 16.1],
 [0, "Tony", 20, 0, 17.1],
 [0, "Alice", 20, null, 18.1]
-    ])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, /*predicate=*/nullptr, expected_array);
+    ])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, /*predicate=*/nullptr, array_result.ValueOrDie());
         }
         {
             // test equal predicate for f0
@@ -130,85 +127,75 @@ class ReadInteWithIndexTest : public testing::Test,
                 PredicateBuilder::Equal(/*field_index=*/0, /*field_name=*/"f0", FieldType::STRING,
                                         Literal(FieldType::STRING, "Alice", 5));
             std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Alice", 20, null, 18.1]
-    ])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+    ])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // test not equal predicate for f0
             auto predicate = PredicateBuilder::NotEqual(/*field_index=*/0, /*field_name=*/"f0",
                                                         FieldType::STRING,
                                                         Literal(FieldType::STRING, "Alice", 5));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Bob", 10, 1, 12.1],
 [0, "Emily", 10, 0, 13.1],
 [0, "Tony", 10, 0, 14.1],
 [0, "Lucy", 20, 1, 15.1],
 [0, "Bob", 10, 1, 16.1],
 [0, "Tony", 20, 0, 17.1]
-    ])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+    ])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // test equal predicate for f1
             auto predicate = PredicateBuilder::Equal(/*field_index=*/1, /*field_name=*/"f1",
                                                      FieldType::INT, Literal(20));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Lucy", 20, 1, 15.1],
 [0, "Tony", 20, 0, 17.1],
 [0, "Alice", 20, null, 18.1]
-    ])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+    ])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // test equal predicate for f2
             auto predicate = PredicateBuilder::Equal(/*field_index=*/2, /*field_name=*/"f2",
                                                      FieldType::INT, Literal(1));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1],
 [0, "Lucy", 20, 1, 15.1],
 [0, "Bob", 10, 1, 16.1]
-    ])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+    ])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // test is null predicate
             auto predicate =
                 PredicateBuilder::IsNull(/*field_index=*/2, /*field_name=*/"f2", FieldType::INT);
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 20, null, 18.1]
-    ])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+    ])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // test is not null predicate
             auto predicate =
                 PredicateBuilder::IsNotNull(/*field_index=*/2, /*field_name=*/"f2", FieldType::INT);
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1],
 [0, "Emily", 10, 0, 13.1],
@@ -216,10 +203,9 @@ class ReadInteWithIndexTest : public testing::Test,
 [0, "Lucy", 20, 1, 15.1],
 [0, "Bob", 10, 1, 16.1],
 [0, "Tony", 20, 0, 17.1]
-    ])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+    ])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // test in predicate
@@ -227,18 +213,16 @@ class ReadInteWithIndexTest : public testing::Test,
                 /*field_index=*/0, /*field_name=*/"f0", FieldType::STRING,
                 {Literal(FieldType::STRING, "Alice", 5), Literal(FieldType::STRING, "Bob", 3),
                  Literal(FieldType::STRING, "Lucy", 4)});
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1],
 [0, "Lucy", 20, 1, 15.1],
 [0, "Bob", 10, 1, 16.1],
 [0, "Alice", 20, null, 18.1]
-    ])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+    ])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // test not in predicate
@@ -246,16 +230,14 @@ class ReadInteWithIndexTest : public testing::Test,
                 /*field_index=*/0, /*field_name=*/"f0", FieldType::STRING,
                 {Literal(FieldType::STRING, "Alice", 5), Literal(FieldType::STRING, "Bob", 3),
                  Literal(FieldType::STRING, "Lucy", 4)});
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Emily", 10, 0, 13.1],
 [0, "Tony", 10, 0, 14.1],
 [0, "Tony", 20, 0, 17.1]
-    ])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+    ])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // test and predicate
@@ -266,14 +248,12 @@ class ReadInteWithIndexTest : public testing::Test,
                                                         FieldType::INT, Literal(20));
             ASSERT_OK_AND_ASSIGN(auto predicate,
                                  PredicateBuilder::And({f0_predicate, f1_predicate}));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 20, null, 18.1]
-    ])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+    ])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // test or predicate
@@ -284,17 +264,15 @@ class ReadInteWithIndexTest : public testing::Test,
                                                         FieldType::INT, Literal(20));
             ASSERT_OK_AND_ASSIGN(auto predicate,
                                  PredicateBuilder::Or({f0_predicate, f1_predicate}));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Lucy", 20, 1, 15.1],
 [0, "Tony", 20, 0, 17.1],
 [0, "Alice", 20, null, 18.1]
-    ])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+    ])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // test predicate push down
@@ -335,9 +313,8 @@ class ReadInteWithIndexTest : public testing::Test,
             // test greater than predicate (take no effective on bitmap index)
             auto predicate = PredicateBuilder::GreaterThan(/*field_index=*/1, /*field_name=*/"f1",
                                                            FieldType::INT, Literal(10));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1],
 [0, "Emily", 10, 0, 13.1],
@@ -346,18 +323,16 @@ class ReadInteWithIndexTest : public testing::Test,
 [0, "Bob", 10, 1, 16.1],
 [0, "Tony", 20, 0, 17.1],
 [0, "Alice", 20, null, 18.1]
-    ])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+    ])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // test predicate on f3 (do not have index)
             auto predicate = PredicateBuilder::Equal(/*field_index=*/3, /*field_name=*/"f3",
                                                      FieldType::DOUBLE, Literal(14.1));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1],
 [0, "Emily", 10, 0, 13.1],
@@ -366,10 +341,9 @@ class ReadInteWithIndexTest : public testing::Test,
 [0, "Bob", 10, 1, 16.1],
 [0, "Tony", 20, 0, 17.1],
 [0, "Alice", 20, null, 18.1]
-    ])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+    ])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
     }
 
@@ -378,8 +352,7 @@ class ReadInteWithIndexTest : public testing::Test,
                                    const std::shared_ptr<Split>& split) const {
         {
             // test with no predicate - return all 8 rows
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type,
+            auto array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type,
                                                                                  {
                                                                                      R"([
 [0, 17, 100, 1.1, 11.11, 19739, "row0"],
@@ -396,117 +369,102 @@ class ReadInteWithIndexTest : public testing::Test,
                                                                                      R"([
 [0, null, null, null, null, null, "null_row"],
 [0, 10, 600, 6.6, 66.66, 19732, "row7"]
-])"},
-                                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, /*predicate=*/nullptr, expected_array);
+])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, /*predicate=*/nullptr, array_result.ValueOrDie());
         }
         {
             // Test equal predicate: f0 = 17 -> row 0
             auto predicate = PredicateBuilder::Equal(/*field_index=*/0, /*field_name=*/"f0",
                                                      FieldType::INT, Literal(17));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 17, 100, 1.1, 11.11, 19739, "row0"]
-])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // Test less than predicate: f0 < 10 -> rows 1,2,3,4 (values 3,5,7,9)
             auto predicate = PredicateBuilder::LessThan(/*field_index=*/0, /*field_name=*/"f0",
                                                         FieldType::INT, Literal(10));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 3, 200, 2.2, 22.22, 19725, "row1"],
 [0, 5, 300, 3.3, 33.33, 19727, "row2"],
 [0, 7, 400, 4.4, 44.44, 19729, "row3"],
 [0, 9, 500, 5.5, 55.55, 19731, "row4"]
-])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // Test greater than predicate: f0 > 5 -> rows 0,3,4,7 (values 17,7,9,10)
             auto predicate = PredicateBuilder::GreaterThan(/*field_index=*/0, /*field_name=*/"f0",
                                                            FieldType::INT, Literal(5));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 17, 100, 1.1, 11.11, 19739, "row0"],
 [0, 7, 400, 4.4, 44.44, 19729, "row3"],
 [0, 9, 500, 5.5, 55.55, 19731, "row4"],
 [0, 10, 600, 6.6, 66.66, 19732, "row7"]
-])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // Test is null predicate on f0 -> rows 5, 6
             auto predicate =
                 PredicateBuilder::IsNull(/*field_index=*/0, /*field_name=*/"f0", FieldType::INT);
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, null, null, null, null, null, null],
 [0, null, null, null, null, null, "null_row"]
-])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // Test is not null predicate on f0 -> rows 0,1,2,3,4,7
             auto predicate =
                 PredicateBuilder::IsNotNull(/*field_index=*/0, /*field_name=*/"f0", FieldType::INT);
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 17, 100, 1.1, 11.11, 19739, "row0"],
 [0, 3, 200, 2.2, 22.22, 19725, "row1"],
 [0, 5, 300, 3.3, 33.33, 19727, "row2"],
 [0, 7, 400, 4.4, 44.44, 19729, "row3"],
 [0, 9, 500, 5.5, 55.55, 19731, "row4"],
 [0, 10, 600, 6.6, 66.66, 19732, "row7"]
-])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // Test in predicate: f0 in (3, 7) -> rows 1, 3
             auto predicate = PredicateBuilder::In(
                 /*field_index=*/0, /*field_name=*/"f0", FieldType::INT, {Literal(3), Literal(7)});
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+            auto array_result =
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 3, 200, 2.2, 22.22, 19725, "row1"],
 [0, 7, 400, 4.4, 44.44, 19729, "row3"]
-])"},
-                                                                 &expected_array);
-            ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+])"});
+            ASSERT_TRUE(array_result.ok());
+            CheckResult(path, {split}, predicate, array_result.ValueOrDie());
         }
         {
             // Test not in predicate: f0 not in (3, 7) -> rows 0,2,4,7 (excluding null rows 5,6)
             auto predicate = PredicateBuilder::NotIn(
                 /*field_index=*/0, /*field_name=*/"f0", FieldType::INT, {Literal(3), Literal(7)});
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 17, 100, 1.1, 11.11, 19739, "row0"],
 [0, 5, 300, 3.3, 33.33, 19727, "row2"],
 [0, 9, 500, 5.5, 55.55, 19731, "row4"],
 [0, 10, 600, 6.6, 66.66, 19732, "row7"]
-    ])"},
-                                                                 &expected_array);
+    ])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
 
         // Test f1 (BIGINT) predicates
@@ -514,16 +472,14 @@ class ReadInteWithIndexTest : public testing::Test,
             // Test greater than predicate: f1 > 300 -> rows 3,4,7 (values 400,500,600)
             auto predicate = PredicateBuilder::GreaterThan(/*field_index=*/1, /*field_name=*/"f1",
                                                            FieldType::BIGINT, Literal(300L));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 7, 400, 4.4, 44.44, 19729, "row3"],
 [0, 9, 500, 5.5, 55.55, 19731, "row4"],
 [0, 10, 600, 6.6, 66.66, 19732, "row7"]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
 
         // Test f2 (FLOAT) predicates
@@ -531,16 +487,14 @@ class ReadInteWithIndexTest : public testing::Test,
             // Test less than predicate: f2 < 4.0 -> rows 0,1,2 (values 1.1,2.2,3.3)
             auto predicate = PredicateBuilder::LessThan(/*field_index=*/2, /*field_name=*/"f2",
                                                         FieldType::FLOAT, Literal(4.0f));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 17, 100, 1.1, 11.11, 19739, "row0"],
 [0, 3, 200, 2.2, 22.22, 19725, "row1"],
 [0, 5, 300, 3.3, 33.33, 19727, "row2"]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         // Test date type
         {
@@ -548,14 +502,12 @@ class ReadInteWithIndexTest : public testing::Test,
             auto predicate =
                 PredicateBuilder::LessOrEqual(/*field_index=*/4, /*field_name=*/"f4",
                                               FieldType::DATE, Literal(FieldType::DATE, 19725));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 3, 200, 2.2, 22.22, 19725, "row1"]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
 
         // Test f3 (DOUBLE) predicates
@@ -563,16 +515,14 @@ class ReadInteWithIndexTest : public testing::Test,
             // Test greater or equal predicate: f3 >= 40.0 -> rows 3,4,7 (values 44.44,55.55,66.66)
             auto predicate = PredicateBuilder::GreaterOrEqual(
                 /*field_index=*/3, /*field_name=*/"f3", FieldType::DOUBLE, Literal(44.44));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 7, 400, 4.4, 44.44, 19729, "row3"],
 [0, 9, 500, 5.5, 55.55, 19731, "row4"],
 [0, 10, 600, 6.6, 66.66, 19732, "row7"]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
 
         // Test BETWEEN predicate on f1 (BIGINT)
@@ -581,17 +531,15 @@ class ReadInteWithIndexTest : public testing::Test,
             auto predicate =
                 PredicateBuilder::Between(/*field_index=*/1, /*field_name=*/"f1", FieldType::BIGINT,
                                           Literal(200L), Literal(500L));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 3, 200, 2.2, 22.22, 19725, "row1"],
 [0, 5, 300, 3.3, 33.33, 19727, "row2"],
 [0, 7, 400, 4.4, 44.44, 19729, "row3"],
 [0, 9, 500, 5.5, 55.55, 19731, "row4"]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
 
         // Test IN predicate on f2 (FLOAT)
@@ -600,16 +548,14 @@ class ReadInteWithIndexTest : public testing::Test,
             auto predicate =
                 PredicateBuilder::In(/*field_index=*/2, /*field_name=*/"f2", FieldType::FLOAT,
                                      {Literal(1.1f), Literal(4.4f), Literal(6.6f)});
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 17, 100, 1.1, 11.11, 19739, "row0"],
 [0, 7, 400, 4.4, 44.44, 19729, "row3"],
 [0, 10, 600, 6.6, 66.66, 19732, "row7"]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         {
             // Test nested composite: (f0 = 3 OR f0 = 17) AND f1 < 200
@@ -627,14 +573,12 @@ class ReadInteWithIndexTest : public testing::Test,
             ASSERT_OK_AND_ASSIGN(auto and_predicate,
                                  PredicateBuilder::And({or_predicate, predicate3}));
 
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 17, 100, 1.1, 11.11, 19739, "row0"]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, and_predicate, expected_array);
+            CheckResult(path, {split}, and_predicate, array_status.ValueOrDie());
         }
         {
             // Test AND predicate with mixed types: f0 >= 5 AND f1 > 100
@@ -648,16 +592,14 @@ class ReadInteWithIndexTest : public testing::Test,
             ASSERT_OK_AND_ASSIGN(auto and_predicate,
                                  PredicateBuilder::And({predicate1, predicate2}));
 
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 7, 400, 4.4, 44.44, 19729, "row3"],
 [0, 9, 500, 5.5, 55.55, 19731, "row4"],
 [0, 10, 600, 6.6, 66.66, 19732, "row7"]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, and_predicate, expected_array);
+            CheckResult(path, {split}, and_predicate, array_status.ValueOrDie());
         }
     }
 
@@ -666,9 +608,8 @@ class ReadInteWithIndexTest : public testing::Test,
                            const std::shared_ptr<Split> split) const {
         {
             // test with non predicate
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 100, -2, 11.1, 1745542802000123000],
 [0, "Bob", 200, -3, 12.1, 1745542902000123000],
 [0, "Emily", 300, 1, 13.1, 1745542602000123000],
@@ -677,102 +618,89 @@ class ReadInteWithIndexTest : public testing::Test,
 [0, "Bob", 100, 2, 16.1, null],
 [0, "Tony", null, -2, 17.1, 1745542802000123001],
 [0, "Alice", 20, null, 18.1, -1724877000]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, /*predicate=*/nullptr, expected_array);
+            CheckResult(path, {split}, /*predicate=*/nullptr, array_status.ValueOrDie());
         }
         {
             // test is null predicate for f4
             auto predicate = PredicateBuilder::IsNull(/*field_index=*/4, /*field_name=*/"f4",
                                                       FieldType::TIMESTAMP);
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Bob", 100, 2, 16.1, null]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         {
             // test equal predicate for f1
             auto predicate = PredicateBuilder::Equal(/*field_index=*/1, /*field_name=*/"f1",
                                                      FieldType::INT, Literal(100));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 100, -2, 11.1, 1745542802000123000],
 [0, "Bob", 100, 2, 16.1, null]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         {
             // test not equal predicate for f2
             auto predicate = PredicateBuilder::NotEqual(/*field_index=*/2, /*field_name=*/"f2",
                                                         FieldType::INT, Literal(-2));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Bob", 200, -3, 12.1, 1745542902000123000],
 [0, "Emily", 300, 1, 13.1, 1745542602000123000],
 [0, "Tony", 50, 1, 14.1, -1744877000],
 [0, "Lucy", 500, -1, 15.1, -1764877000],
 [0, "Bob", 100, 2, 16.1, null]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         {
             // test greater than predicate for f1
             auto predicate = PredicateBuilder::GreaterThan(/*field_index=*/1, /*field_name=*/"f1",
                                                            FieldType::INT, Literal(100));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Bob", 200, -3, 12.1, 1745542902000123000],
 [0, "Emily", 300, 1, 13.1, 1745542602000123000],
 [0, "Lucy", 500, -1, 15.1, -1764877000]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         {
             // test greater or equal predicate for f2
             auto predicate = PredicateBuilder::GreaterOrEqual(
                 /*field_index=*/2, /*field_name=*/"f2", FieldType::INT, Literal(-1));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Emily", 300, 1, 13.1, 1745542602000123000],
 [0, "Tony", 50, 1, 14.1, -1744877000],
 [0, "Lucy", 500, -1, 15.1, -1764877000],
 [0, "Bob", 100, 2, 16.1, null]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         {
             // test less than predicate for f4
             auto predicate = PredicateBuilder::LessThan(/*field_index=*/4, /*field_name=*/"f4",
                                                         FieldType::TIMESTAMP,
                                                         Literal(Timestamp(1745542802000l, 123000)));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Emily", 300, 1, 13.1, 1745542602000123000],
 [0, "Tony", 50, 1, 14.1, -1744877000],
 [0, "Lucy", 500, -1, 15.1, -1764877000],
 [0, "Alice", 20, null, 18.1, -1724877000]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         {
             // test less or equal predicate for f4, as timestamp is normalized to long (micros),
@@ -780,53 +708,47 @@ class ReadInteWithIndexTest : public testing::Test,
             auto predicate = PredicateBuilder::LessOrEqual(
                 /*field_index=*/4, /*field_name=*/"f4", FieldType::TIMESTAMP,
                 Literal(Timestamp(1745542802000l, 123001)));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 100, -2, 11.1, 1745542802000123000],
 [0, "Emily", 300, 1, 13.1, 1745542602000123000],
 [0, "Tony", 50, 1, 14.1, -1744877000],
 [0, "Lucy", 500, -1, 15.1, -1764877000],
 [0, "Tony", null, -2, 17.1, 1745542802000123001],
 [0, "Alice", 20, null, 18.1, -1724877000]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         {
             // test in for f2
             auto predicate =
                 PredicateBuilder::In(/*field_index=*/2, /*field_name=*/"f2", FieldType::INT,
                                      {Literal(-1), Literal(2), Literal(-2)});
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 100, -2, 11.1, 1745542802000123000],
 [0, "Lucy", 500, -1, 15.1, -1764877000],
 [0, "Bob", 100, 2, 16.1, null],
 [0, "Tony", null, -2, 17.1, 1745542802000123001]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         {
             // test not in for f1
             auto predicate =
                 PredicateBuilder::NotIn(/*field_index=*/1, /*field_name=*/"f1", FieldType::INT,
                                         {Literal(100), Literal(400), Literal(200)});
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Emily", 300, 1, 13.1, 1745542602000123000],
 [0, "Tony", 50, 1, 14.1, -1744877000],
 [0, "Lucy", 500, -1, 15.1, -1764877000],
 [0, "Alice", 20, null, 18.1, -1724877000]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         {
             // test and predicate
@@ -836,15 +758,13 @@ class ReadInteWithIndexTest : public testing::Test,
                 /*field_index=*/2, /*field_name=*/"f2", FieldType::INT, Literal(0));
             ASSERT_OK_AND_ASSIGN(auto predicate,
                                  PredicateBuilder::And({f1_predicate, f2_predicate}));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Bob", 200, -3, 12.1, 1745542902000123000],
 [0, "Lucy", 500, -1, 15.1, -1764877000]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         {
             // test or predicate
@@ -855,9 +775,8 @@ class ReadInteWithIndexTest : public testing::Test,
                 Literal(Timestamp(1745542802000l, 123000)));
             ASSERT_OK_AND_ASSIGN(auto predicate,
                                  PredicateBuilder::Or({f2_predicate, f4_predicate}));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 100, -2, 11.1, 1745542802000123000],
 [0, "Emily", 300, 1, 13.1, 1745542602000123000],
 [0, "Tony", 50, 1, 14.1, -1744877000],
@@ -865,10 +784,9 @@ class ReadInteWithIndexTest : public testing::Test,
 [0, "Bob", 100, 2, 16.1, null],
 [0, "Tony", null, -2, 17.1, 1745542802000123001],
 [0, "Alice", 20, null, 18.1, -1724877000]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         {
             // test and predicate for is not null
@@ -880,18 +798,16 @@ class ReadInteWithIndexTest : public testing::Test,
                 /*field_index=*/4, /*field_name=*/"f4", FieldType::TIMESTAMP);
             ASSERT_OK_AND_ASSIGN(auto predicate,
                                  PredicateBuilder::And({f1_predicate, f2_predicate, f4_predicate}));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 100, -2, 11.1, 1745542802000123000],
 [0, "Bob", 200, -3, 12.1, 1745542902000123000],
 [0, "Emily", 300, 1, 13.1, 1745542602000123000],
 [0, "Tony", 50, 1, 14.1, -1744877000],
 [0, "Lucy", 500, -1, 15.1, -1764877000]
-])"},
-                                                                 &expected_array);
+])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
     }
 
@@ -952,11 +868,10 @@ TEST_P(ReadInteWithIndexTest, TestSimple) {
         PredicateBuilder::Equal(/*field_index=*/0, /*field_name=*/"f0", FieldType::STRING,
                                 Literal(FieldType::STRING, "Alice", 5));
     std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Alice", 20, null, 18.1]
-    ])"},
-                                                                         &expected_array);
+    ])"});
     ASSERT_TRUE(array_status.ok());
 
     ReadContextBuilder context_builder(path);
@@ -972,7 +887,7 @@ TEST_P(ReadInteWithIndexTest, TestSimple) {
     ASSERT_OK_AND_ASSIGN(auto batch_reader, table_read->CreateReader(split));
     ASSERT_OK_AND_ASSIGN(auto result_array, ReadResultCollector::CollectResult(batch_reader.get()));
     ASSERT_TRUE(result_array);
-    ASSERT_TRUE(result_array->Equals(*expected_array));
+    ASSERT_TRUE(result_array->Equals(*array_status.ValueOrDie()));
 
     // test metrics
     if (file_format == "orc") {
@@ -1322,31 +1237,27 @@ TEST_P(ReadInteWithIndexTest, TestBitmapIndexWithDv) {
                                          .Build());
     {
         // test with non predicate
-        std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 1, "Bob", 10, 1, 12.1],
 [0, 2, "Emily", 10, 0, 13.1],
 [0, 3, "Tony", 10, 0, 14.1],
 [0, 5, "Bob", 10, 1, 16.1],
 [0, 6, "Tony", 20, 0, 17.1],
 [0, 7, "Alice", 20, null, 18.1]
-    ])"},
-                                                                             &expected_array);
+    ])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, /*predicate=*/nullptr, expected_array);
+        CheckResult(path, {split}, /*predicate=*/nullptr, array_status.ValueOrDie());
     }
     {
         // test equal, Alice with key 0 is removed by dv
         auto predicate =
             PredicateBuilder::Equal(/*field_index=*/1, /*field_name=*/"f0", FieldType::STRING,
                                     Literal(FieldType::STRING, "Alice", 5));
-        std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
     [0, 7, "Alice", 20, null, 18.1]
-        ])"},
-                                                                             &expected_array);
+        ])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test equal, Lucy is removed by dv
@@ -1363,17 +1274,15 @@ TEST_P(ReadInteWithIndexTest, TestBitmapIndexWithDv) {
         auto f1_predicate = PredicateBuilder::Equal(/*field_index=*/2, /*field_name=*/"f1",
                                                     FieldType::INT, Literal(10));
         ASSERT_OK_AND_ASSIGN(auto predicate, PredicateBuilder::Or({f0_predicate, f1_predicate}));
-        std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 1, "Bob", 10, 1, 12.1],
 [0, 2, "Emily", 10, 0, 13.1],
 [0, 3, "Tony", 10, 0, 14.1],
 [0, 5, "Bob", 10, 1, 16.1],
 [0, 7, "Alice", 20, null, 18.1]
-    ])"},
-                                                                             &expected_array);
+    ])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
 }
 
@@ -1480,7 +1389,7 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
     {
         // test with non predicate
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 10, "Alice", 11.1, null],
 [0, 10, "Bob", 12.1, null],
 [0, 10, "Emily", 13.1, null],
@@ -1493,44 +1402,41 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
 [0, 20, "Emily", 22.1, 101],
 [0, 10, "Bob", 23.1, 100],
 [0, 30, "David", 24.1, null]
-])"},
-                                                                             &expected_array);
+])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, /*predicate=*/nullptr, expected_array);
+        CheckResult(path, {split}, /*predicate=*/nullptr, array_status.ValueOrDie());
     }
     {
         // test equal predicate for f1
         auto predicate = PredicateBuilder::Equal(/*field_index=*/0, /*field_name=*/"f1",
                                                  FieldType::BIGINT, Literal(10l));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 10, "Alice", 11.1, null],
 [0, 10, "Bob", 12.1, null],
 [0, 10, "Emily", 13.1, null],
 [0, 10, "Tony", 14.1, null],
 [0, 10, "Bob", 16.1, null],
 [0, 10, "Bob", 23.1, 100]
-])"},
-                                                                             &expected_array);
+])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test not equal predicate for f1
         auto predicate = PredicateBuilder::NotEqual(/*field_index=*/0, /*field_name=*/"f1",
                                                     FieldType::BIGINT, Literal(10l));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 20, "Lucy", 15.1, null],
 [0, 20, "Tony", 17.1, null],
 [0, 20, "Alice", 18.1, null],
 [0, 30, "Alice", 21.1, 100],
 [0, 20, "Emily", 22.1, 101],
 [0, 30, "David", 24.1, null]
-])"},
-                                                                             &expected_array);
+])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test equal predicate for f4
@@ -1538,14 +1444,13 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
             PredicateBuilder::Equal(/*field_index=*/1, /*field_name=*/"f4", FieldType::STRING,
                                     Literal(FieldType::STRING, "Alice", 5));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 10, "Alice", 11.1, null],
 [0, 20, "Alice", 18.1, null],
 [0, 30, "Alice", 21.1, 100]
-])"},
-                                                                             &expected_array);
+])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test not equal predicate for f4
@@ -1553,7 +1458,7 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
             PredicateBuilder::NotEqual(/*field_index=*/1, /*field_name=*/"f4", FieldType::STRING,
                                        Literal(FieldType::STRING, "Alice", 5));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 10, "Bob", 12.1, null],
 [0, 10, "Emily", 13.1, null],
 [0, 10, "Tony", 14.1, null],
@@ -1563,17 +1468,16 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
 [0, 20, "Emily", 22.1, 101],
 [0, 10, "Bob", 23.1, 100],
 [0, 30, "David", 24.1, null]
-])"},
-                                                                             &expected_array);
+])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test equal predicate for f3, only do predicate push down
         auto predicate = PredicateBuilder::Equal(/*field_index=*/2, /*field_name=*/"f3",
                                                  FieldType::DOUBLE, Literal(14.1));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 10, "Alice", 11.1, null],
 [0, 10, "Bob", 12.1, null],
 [0, 10, "Emily", 13.1, null],
@@ -1582,17 +1486,16 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
 [0, 10, "Bob", 16.1, null],
 [0, 20, "Tony", 17.1, null],
 [0, 20, "Alice", 18.1, null]
-])"},
-                                                                             &expected_array);
+])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test is null predicate for f5
         auto predicate =
             PredicateBuilder::IsNull(/*field_index=*/3, /*field_name=*/"f5", FieldType::INT);
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 10, "Alice", 11.1, null],
 [0, 10, "Bob", 12.1, null],
 [0, 10, "Emily", 13.1, null],
@@ -1602,10 +1505,9 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
 [0, 20, "Tony", 17.1, null],
 [0, 20, "Alice", 18.1, null],
 [0, 30, "David", 24.1, null]
-])"},
-                                                                             &expected_array);
+])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test is_not_null predicate for f5
@@ -1614,7 +1516,7 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
         auto predicate =
             PredicateBuilder::IsNotNull(/*field_index=*/3, /*field_name=*/"f5", FieldType::INT);
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 10, "Alice", 11.1, null],
 [0, 10, "Bob", 12.1, null],
 [0, 10, "Emily", 13.1, null],
@@ -1626,17 +1528,16 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
 [0, 30, "Alice", 21.1, 100],
 [0, 20, "Emily", 22.1, 101],
 [0, 10, "Bob", 23.1, 100]
-])"},
-                                                                             &expected_array);
+])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test greater than predicate for f1, do not take effective in bitmap index
         auto predicate = PredicateBuilder::GreaterThan(/*field_index=*/0, /*field_name=*/"f1",
                                                        FieldType::BIGINT, Literal(10l));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 10, "Alice", 11.1, null],
 [0, 10, "Bob", 12.1, null],
 [0, 10, "Emily", 13.1, null],
@@ -1649,10 +1550,9 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
 [0, 20, "Emily", 22.1, 101],
 [0, 10, "Bob", 23.1, 100],
 [0, 30, "David", 24.1, null]
-])"},
-                                                                             &expected_array);
+])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test in predicate
@@ -1660,7 +1560,7 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
             PredicateBuilder::In(/*field_index=*/0, /*field_name=*/"f1", FieldType::BIGINT,
                                  {Literal(10l), Literal(30l), Literal(50l)});
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 10, "Alice", 11.1, null],
 [0, 10, "Bob", 12.1, null],
 [0, 10, "Emily", 13.1, null],
@@ -1669,10 +1569,9 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
 [0, 30, "Alice", 21.1, 100],
 [0, 10, "Bob", 23.1, 100],
 [0, 30, "David", 24.1, null]
-])"},
-                                                                             &expected_array);
+])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test not in predicate
@@ -1680,15 +1579,14 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
             PredicateBuilder::NotIn(/*field_index=*/0, /*field_name=*/"f1", FieldType::BIGINT,
                                     {Literal(10l), Literal(30l), Literal(50l)});
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 20, "Lucy", 15.1, null],
 [0, 20, "Tony", 17.1, null],
 [0, 20, "Alice", 18.1, null],
 [0, 20, "Emily", 22.1, 101]
-])"},
-                                                                             &expected_array);
+])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test and predicate
@@ -1699,12 +1597,11 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
                                                     FieldType::BIGINT, Literal(30l));
         ASSERT_OK_AND_ASSIGN(auto predicate, PredicateBuilder::And({f4_predicate, f1_predicate}));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 30, "Alice", 21.1, 100]
-    ])"},
-                                                                             &expected_array);
+])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test or predicate
@@ -1715,15 +1612,14 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
                                                     FieldType::BIGINT, Literal(30l));
         ASSERT_OK_AND_ASSIGN(auto predicate, PredicateBuilder::Or({f4_predicate, f1_predicate}));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 10, "Alice", 11.1, null],
 [0, 20, "Alice", 18.1, null],
 [0, 30, "Alice", 21.1, 100],
 [0, 30, "David", 24.1, null]
-    ])"},
-                                                                             &expected_array);
+])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test early stop
@@ -1748,7 +1644,7 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
         auto predicate = PredicateBuilder::NotEqual(/*field_index=*/0, /*field_name=*/"f1",
                                                     FieldType::BIGINT, Literal(40l));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, 10, "Alice", 11.1, null],
 [0, 10, "Bob", 12.1, null],
 [0, 10, "Emily", 13.1, null],
@@ -1761,10 +1657,9 @@ TEST_P(ReadInteWithIndexTest, TestWithAlterTable) {
 [0, 20, "Emily", 22.1, 101],
 [0, 10, "Bob", 23.1, 100],
 [0, 30, "David", 24.1, null]
-])"},
-                                                                             &expected_array);
+])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
 }
 
@@ -1810,7 +1705,7 @@ TEST_P(ReadInteWithIndexTest, TestWithBsiIndex) {
             PredicateBuilder::Equal(/*field_index=*/0, /*field_name=*/"f0", FieldType::STRING,
                                     Literal(FieldType::STRING, "Alice", 5));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
     [0, "Alice", 100, -2, 11.1, 1745542802000123000],
     [0, "Bob", 200, -3, 12.1, 1745542902000123000],
     [0, "Emily", 300, 1, 13.1, 1745542602000123000],
@@ -1819,10 +1714,9 @@ TEST_P(ReadInteWithIndexTest, TestWithBsiIndex) {
     [0, "Bob", 100, 2, 16.1, null],
     [0, "Tony", null, -2, 17.1, 1745542802000123001],
     [0, "Alice", 20, null, 18.1, -1724877000]
-    ])"},
-                                                                             &expected_array);
+    ])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     CheckResultForBsi(path, arrow_data_type, {split});
 }
@@ -1866,7 +1760,7 @@ TEST_P(ReadInteWithIndexTest, TestWithBloomFilterIndex) {
                          builder.WithSnapshot(1).IsStreaming(false).RawConvertible(true).Build());
 
     std::shared_ptr<arrow::ChunkedArray> all_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 100, -2, 11.1, 1745542802000123000],
 [0, "Bob", 200, -3, 12.1, 1745542902000123000],
 [0, "Emily", 300, 1, 13.1, 1745542602000123000],
@@ -1875,8 +1769,7 @@ TEST_P(ReadInteWithIndexTest, TestWithBloomFilterIndex) {
 [0, "Bob", 100, 2, 16.1, null],
 [0, "Tony", null, -2, 17.1, 1745542802000123001],
 [0, "Alice", 20, null, 18.1, -1724877000]
-])"},
-                                                                         &all_array);
+])"});
     ASSERT_TRUE(array_status.ok());
     {
         // test with non predicate
@@ -2081,26 +1974,24 @@ TEST_P(ReadInteWithIndexTest, TestBitmapPushDownWithMultiStripes) {
         auto predicate = PredicateBuilder::GreaterThan(/*field_index=*/1, /*field_name=*/
                                                        "f1", FieldType::INT, Literal(10));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
     [0, "Lucy", 20, 1, 15.1],
     [0, "Tony", 20, 0, 17.1],
     [0, "Alice", 20, null, 18.1]
-        ])"},
-                                                                             &expected_array);
+    ])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test predicate on f3 (do not have index), but predicates can be pushdown
         auto predicate = PredicateBuilder::Equal(/*field_index=*/3, /*field_name=*/"f3",
                                                  FieldType::DOUBLE, Literal(14.1));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
     [0, "Tony", 10, 0, 14.1]
-        ])"},
-                                                                             &expected_array);
+    ])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test and predicate, although the bitmap index cannot handle the LessThan
@@ -2112,12 +2003,11 @@ TEST_P(ReadInteWithIndexTest, TestBitmapPushDownWithMultiStripes) {
                                                        "f1", FieldType::INT, Literal(15));
         ASSERT_OK_AND_ASSIGN(auto predicate, PredicateBuilder::And({f0_predicate, f1_predicate}));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
     [0, "Alice", 10, 1, 11.1]
-        ])"},
-                                                                             &expected_array);
+    ])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test or predicate, although the bitmap index cannot handle the LessOrEqual
@@ -2129,17 +2019,16 @@ TEST_P(ReadInteWithIndexTest, TestBitmapPushDownWithMultiStripes) {
                                                           "f1", FieldType::INT, Literal(10));
         ASSERT_OK_AND_ASSIGN(auto predicate, PredicateBuilder::Or({f0_predicate, f1_predicate}));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
     [0, "Alice", 10, 1, 11.1],
     [0, "Bob", 10, 1, 12.1],
     [0, "Emily", 10, 0, 13.1],
     [0, "Tony", 10, 0, 14.1],
     [0, "Bob", 10, 1, 16.1],
     [0, "Alice", 20, null, 18.1]
-        ])"},
-                                                                             &expected_array);
+    ])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
 }
 
@@ -2187,7 +2076,7 @@ TEST_P(ReadInteWithIndexTest, TestWithBitmapAndBsiAndBloomFilterIndex) {
         auto predicate = PredicateBuilder::Equal(/*field_index=*/3, /*field_name=*/"f3",
                                                  FieldType::DOUBLE, Literal(14.1));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
     [0, "Alice", 100, -2, 11.1, 1745542802000123000],
     [0, "Bob", 200, -3, 12.1, 1745542902000123000],
     [0, "Emily", 300, 1, 13.1, 1745542602000123000],
@@ -2196,10 +2085,9 @@ TEST_P(ReadInteWithIndexTest, TestWithBitmapAndBsiAndBloomFilterIndex) {
     [0, "Bob", 100, 2, 16.1, null],
     [0, "Tony", null, -2, 17.1, 1745542802000123001],
     [0, "Alice", 20, null, 18.1, -1724877000]
-    ])"},
-                                                                             &expected_array);
+    ])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
     {
         // test equal predicate for f3, only bloom filter take effective
@@ -2213,13 +2101,12 @@ TEST_P(ReadInteWithIndexTest, TestWithBitmapAndBsiAndBloomFilterIndex) {
             PredicateBuilder::Equal(/*field_index=*/0, /*field_name=*/"f0", FieldType::STRING,
                                     Literal(FieldType::STRING, "Alice", 5));
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
     [0, "Alice", 100, -2, 11.1, 1745542802000123000],
     [0, "Alice", 20, null, 18.1, -1724877000]
-    ])"},
-                                                                             &expected_array);
+    ])"});
         ASSERT_TRUE(array_status.ok());
-        CheckResult(path, {split}, predicate, expected_array);
+        CheckResult(path, {split}, predicate, array_status.ValueOrDie());
     }
 }
 
@@ -2275,9 +2162,8 @@ TEST_P(ReadInteWithIndexTest, TestWithIndexWithoutRegistered) {
             // no effective
             auto predicate = PredicateBuilder::GreaterThan(/*field_index=*/1, /*field_name=*/
                                                            "f1", FieldType::INT, Literal(100));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
     [0, "Alice", 100, -2, 11.1, 1745542802000123000],
     [0, "Bob", 200, -3, 12.1, 1745542902000123000],
     [0, "Emily", 300, 1, 13.1, 1745542602000123000],
@@ -2286,10 +2172,9 @@ TEST_P(ReadInteWithIndexTest, TestWithIndexWithoutRegistered) {
     [0, "Bob", 100, 2, 16.1, null],
     [0, "Tony", null, -2, 17.1, 1745542802000123001],
     [0, "Alice", 20, null, 18.1, -1724877000]
-    ])"},
-                                                                 &expected_array);
+    ])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         {
             // test and predicate, only f1_equals takes effective
@@ -2299,15 +2184,13 @@ TEST_P(ReadInteWithIndexTest, TestWithIndexWithoutRegistered) {
                 /*field_index=*/2, /*field_name=*/"f2", FieldType::INT, Literal(0));
             ASSERT_OK_AND_ASSIGN(auto predicate,
                                  PredicateBuilder::And({f1_equals, f2_greater_than}));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
     [0, "Alice", 100, -2, 11.1, 1745542802000123000],
     [0, "Bob", 100, 2, 16.1, null]
-    ])"},
-                                                                 &expected_array);
+    ])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
     }
     {
@@ -2324,9 +2207,8 @@ TEST_P(ReadInteWithIndexTest, TestWithIndexWithoutRegistered) {
             auto predicate =
                 PredicateBuilder::Equal(/*field_index=*/0, /*field_name=*/"f0", FieldType::STRING,
                                         Literal(FieldType::STRING, "Alice", 5));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
     [0, "Alice", 100, -2, 11.1, 1745542802000123000],
     [0, "Bob", 200, -3, 12.1, 1745542902000123000],
     [0, "Emily", 300, 1, 13.1, 1745542602000123000],
@@ -2335,10 +2217,9 @@ TEST_P(ReadInteWithIndexTest, TestWithIndexWithoutRegistered) {
     [0, "Bob", 100, 2, 16.1, null],
     [0, "Tony", null, -2, 17.1, 1745542802000123001],
     [0, "Alice", 20, null, 18.1, -1724877000]
-    ])"},
-                                                                 &expected_array);
+    ])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
         {
             // test and predicate, as bsi is registered f1_equals and f2_greater_than all take
@@ -2349,14 +2230,12 @@ TEST_P(ReadInteWithIndexTest, TestWithIndexWithoutRegistered) {
                 /*field_index=*/2, /*field_name=*/"f2", FieldType::INT, Literal(0));
             ASSERT_OK_AND_ASSIGN(auto predicate,
                                  PredicateBuilder::And({f1_equals, f2_greater_than}));
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
             auto array_status =
-                arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+                arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
     [0, "Bob", 100, 2, 16.1, null]
-    ])"},
-                                                                 &expected_array);
+    ])"});
             ASSERT_TRUE(array_status.ok());
-            CheckResult(path, {split}, predicate, expected_array);
+            CheckResult(path, {split}, predicate, array_status.ValueOrDie());
         }
     }
 }
@@ -2491,11 +2370,10 @@ TEST_P(ReadInteWithIndexTest, TestWithIOException) {
         PredicateBuilder::Equal(/*field_index=*/0, /*field_name=*/"f0", FieldType::STRING,
                                 Literal(FieldType::STRING, "Alice", 5));
     std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Alice", 20, null, 18.1]
-    ])"},
-                                                                         &expected_array);
+])"});
     ASSERT_TRUE(array_status.ok());
 
     bool run_complete = false;
@@ -2519,7 +2397,7 @@ TEST_P(ReadInteWithIndexTest, TestWithIOException) {
         CHECK_HOOK_STATUS(result.status(), i);
         auto result_array = result.value();
         ASSERT_TRUE(result_array);
-        ASSERT_TRUE(result_array->Equals(*expected_array));
+        ASSERT_TRUE(result_array->Equals(*array_status.ValueOrDie()));
         run_complete = true;
         break;
     }

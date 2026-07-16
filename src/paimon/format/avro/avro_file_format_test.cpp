@@ -23,7 +23,7 @@
 #include "arrow/api.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/utils/date_time_utils.h"
 #include "paimon/common/utils/path_util.h"
@@ -69,7 +69,7 @@ class AvroFileFormatTest : public testing::Test, public ::testing::WithParamInte
         ASSERT_OK_AND_ASSIGN(auto writer, writer_builder->Build(out, compression));
 
         auto input_array =
-            arrow::ipc::internal::json::ArrayFromJSON(data_type, data_str).ValueOrDie();
+            arrow::json::ArrayFromJSONString(data_type, data_str).ValueOrDie();
         ASSERT_TRUE(input_array);
         ::ArrowArray c_array;
         ASSERT_TRUE(arrow::ExportArray(*input_array, &c_array).ok());

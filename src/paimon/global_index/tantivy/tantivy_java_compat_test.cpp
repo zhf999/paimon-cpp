@@ -397,7 +397,7 @@ TEST_F(JavaCompatTest, CppWriteDefaultTokenizerForJavaCrossRead) {
         json += "\"]";
     }
     json += "]";
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json).ValueOrDie();
+    auto array = arrow::json::ArrayFromJSONString(data_type, json).ValueOrDie();
     ::ArrowArray c_array;
     ASSERT_TRUE(arrow::ExportArray(*array, &c_array).ok());
     std::vector<int64_t> relative_row_ids(array->length());

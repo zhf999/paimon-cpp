@@ -22,7 +22,7 @@
 
 #include "arrow/api.h"
 #include "arrow/array/array_nested.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/types/data_field.h"
 #include "paimon/common/types/row_kind.h"
@@ -62,7 +62,7 @@ TEST_F(KeyValueInMemoryRecordReaderTest, TestSimple) {
         DataField::ConvertDataFieldsToArrowStructType(fields);
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 2, 11, 21, 31],
         [1, 1, 10, 20, 30],
         [2, 3, 13, 23, 33],
@@ -125,7 +125,7 @@ TEST_F(KeyValueInMemoryRecordReaderTest, TestUserDefinedSequenceFields) {
         DataField::ConvertDataFieldsToArrowStructType(fields);
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [2, 2, 11, 21, 31],
         [1, 2, 11, 21, 31],
         [1, 1, 10, 20, 30],
@@ -194,7 +194,7 @@ TEST_F(KeyValueInMemoryRecordReaderTest, TestUserDefinedSequenceFieldsDescending
         DataField::ConvertDataFieldsToArrowStructType(fields);
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [2, 2, 11, 21, 31],
         [1, 2, 11, 21, 31],
         [1, 1, 10, 20, 30],
@@ -263,7 +263,7 @@ TEST_F(KeyValueInMemoryRecordReaderTest, TestNonExistPK) {
         DataField::ConvertDataFieldsToArrowStructType(fields);
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 2, 11, 21, 31],
         [1, 1, 10, 20, 30],
         [2, 3, 13, 23, 33],
@@ -299,7 +299,7 @@ TEST_F(KeyValueInMemoryRecordReaderTest, TestStableSortWithDuplicateKeys) {
     // the first row and the last row are both k0,k1: 1, 2, as stable sort, the first row will be
     // return before the last
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 2, 11, 21, 31],
         [1, 1, 10, 20, 30],
         [2, 3, 13, 23, 33],
@@ -407,7 +407,7 @@ TEST_F(KeyValueInMemoryRecordReaderTest, TestVariantType) {
 
         auto src_type = DataField::ConvertDataFieldsToArrowStructType(fields);
         auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+            arrow::json::ArrayFromJSONString(src_type, R"([
         [2, 2, 11, 21, 31],
         [1, 1, 10, 20, 30],
         [2, 1, 13, 23, 33],
@@ -428,7 +428,7 @@ TEST_F(KeyValueInMemoryRecordReaderTest, TestVariantType) {
 
         auto src_type = DataField::ConvertDataFieldsToArrowStructType(fields);
         auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+            arrow::json::ArrayFromJSONString(src_type, R"([
         [2, 2, 11, 21, 31],
         [1, 1, 10, 20, 30],
         [2, 1, 13, 23, 33],
@@ -449,7 +449,7 @@ TEST_F(KeyValueInMemoryRecordReaderTest, TestVariantType) {
 
         auto src_type = DataField::ConvertDataFieldsToArrowStructType(fields);
         auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+            arrow::json::ArrayFromJSONString(src_type, R"([
         [2.1, 2.12, 11, 21, 31],
         [1.1, 1.12, 10, 20, 30],
         [2.1, 1.12, 13, 23, 33],
@@ -469,7 +469,7 @@ TEST_F(KeyValueInMemoryRecordReaderTest, TestVariantType) {
 
         auto src_type = DataField::ConvertDataFieldsToArrowStructType(fields);
         auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+            arrow::json::ArrayFromJSONString(src_type, R"([
         ["2.1", "2.12", 11, 21, 31],
         ["1.1", "1.12", 10, 20, 30],
         ["2.1", "1.12", 13, 23, 33],
@@ -491,7 +491,7 @@ TEST_F(KeyValueInMemoryRecordReaderTest, TestVariantType) {
 
         auto src_type = DataField::ConvertDataFieldsToArrowStructType(fields);
         auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+            arrow::json::ArrayFromJSONString(src_type, R"([
         [2, true, 11, 21, 31],
         [1, false, 10, 20, 30],
         [2, false, 13, 23, 33],
@@ -512,7 +512,7 @@ TEST_F(KeyValueInMemoryRecordReaderTest, TestVariantType) {
 
         auto src_type = DataField::ConvertDataFieldsToArrowStructType(fields);
         auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+            arrow::json::ArrayFromJSONString(src_type, R"([
         ["2033-05-18 03:33:20.0", "12.345", 11, 21, 31],
         ["1923-05-18 03:33:20.0", "-12.345", 10, 20, 30],
         ["2033-05-18 03:33:20.0", "-12.345", 13, 23, 33],

@@ -169,7 +169,7 @@ TEST_F(TantivyGlobalIndexWriterTest, EnglishCorpusProducesValidPackedIndex) {
     std::map<std::string, std::string> options = {
         {kTantivyWriteOmitTermFreqAndPositions, "false"},
     };
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(data_type_, R"([
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(data_type_, R"([
             ["This is an test document."],
             ["This is an new document document document."],
             ["Document document document document test."],
@@ -213,7 +213,7 @@ TEST_F(TantivyGlobalIndexWriterTest, ChineseCorpusProducesValidPackedIndex) {
         {kTantivyWriteTokenizer, "paimon_jieba"},
         {kJiebaTokenizeMode, "query"},
     };
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(data_type_, R"([
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(data_type_, R"([
             ["千问是一个智能助手"],
             ["新一代AI助手发布"]
         ])")
@@ -233,7 +233,7 @@ TEST_F(TantivyGlobalIndexWriterTest, NullStringRowsBecomeEmptyDocuments) {
     std::string root = root_dir->Str();
 
     std::map<std::string, std::string> options;
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(data_type_, R"([
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(data_type_, R"([
             ["nonempty"],
             [null],
             ["another"]

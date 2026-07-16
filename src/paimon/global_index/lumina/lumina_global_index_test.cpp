@@ -168,7 +168,7 @@ class LuminaGlobalIndexTest : public ::testing::Test {
                                                    {"lumina.search.parallel_number", "10"}};
     std::shared_ptr<arrow::DataType> data_type_ =
         arrow::struct_({arrow::field("f0", arrow::list(arrow::float32()))});
-    std::shared_ptr<arrow::Array> array_ = arrow::ipc::internal::json::ArrayFromJSON(data_type_,
+    std::shared_ptr<arrow::Array> array_ = arrow::json::ArrayFromJSONString(data_type_,
                                                                                      R"([
         [[0.0, 0.0, 0.0, 0.0]],
         [[0.0, 1.0, 0.0, 1.0]],
@@ -276,7 +276,7 @@ TEST_F(LuminaGlobalIndexTest, TestInvalidInputs) {
                             "field type must be list[float] when create LuminaIndexWriter");
     }
     {
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(data_type_,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(data_type_,
                                                                                         R"([
                [[0.0, 0.0, 0.0, 0.0]],
                null
@@ -286,7 +286,7 @@ TEST_F(LuminaGlobalIndexTest, TestInvalidInputs) {
                             "arrow_array in LuminaIndexWriter is invalid, must not null");
     }
     {
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(data_type_,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(data_type_,
                                                                                         R"([
                [[0.0, 0.0, 0.0, 0.0]],
                [[0.0, 1.0, 0.0, null]]
@@ -296,7 +296,7 @@ TEST_F(LuminaGlobalIndexTest, TestInvalidInputs) {
                             "field value array in LuminaIndexWriter is invalid, must not null");
     }
     {
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(data_type_,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(data_type_,
                                                                                         R"([
                [[0.0, 0.0, 0.0, 0.0]],
                [[0.0, 1.0, 0.0]]
@@ -478,7 +478,7 @@ TEST_F(LuminaGlobalIndexTest, TestWriteWithNullRows) {
     // Array with null at row 1 (middle): rows 0,2,3 are valid, row 1 is null
     // This should split into two segments: [0,0] and [2,3]
     std::shared_ptr<arrow::Array> array_with_null =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type_,
+        arrow::json::ArrayFromJSONString(data_type_,
                                                   R"([
         [[0.0, 0.0, 0.0, 0.0]],
         [null],
@@ -511,7 +511,7 @@ TEST_F(LuminaGlobalIndexTest, TestWriteWithMultipleNullSegments) {
     // Nulls at rows 0, 2, 5: valid rows are 1, 3, 4
     // Splits into segments: [1,1], [3,4]
     std::shared_ptr<arrow::Array> array_with_nulls =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type_,
+        arrow::json::ArrayFromJSONString(data_type_,
                                                   R"([
         [null],
         [[0.0, 1.0, 0.0, 1.0]],
@@ -544,7 +544,7 @@ TEST_F(LuminaGlobalIndexTest, TestWriteWithAllNullRows) {
 
     // All rows are null — no vectors to index
     std::shared_ptr<arrow::Array> all_null_array =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type_,
+        arrow::json::ArrayFromJSONString(data_type_,
                                                   R"([
         [null],
         [null],
@@ -576,7 +576,7 @@ TEST_F(LuminaGlobalIndexTest, TestWriteWithNullAndFilter) {
 
     // Null at row 2: valid rows are 0, 1, 3
     std::shared_ptr<arrow::Array> array_with_null =
-        arrow::ipc::internal::json::ArrayFromJSON(data_type_,
+        arrow::json::ArrayFromJSONString(data_type_,
                                                   R"([
         [[0.0, 0.0, 0.0, 0.0]],
         [[0.0, 1.0, 0.0, 1.0]],
@@ -607,7 +607,7 @@ TEST_F(LuminaGlobalIndexTest, TestWriteWithNullAcrossMultipleBatches) {
     std::string test_root = test_root_dir->Str();
 
     // Batch 1: rows 0-2, null at row 1 → indexed ids: {0, 2}
-    std::shared_ptr<arrow::Array> batch1 = arrow::ipc::internal::json::ArrayFromJSON(data_type_,
+    std::shared_ptr<arrow::Array> batch1 = arrow::json::ArrayFromJSONString(data_type_,
                                                                                      R"([
         [[0.0, 0.0, 0.0, 0.0]],
         [null],
@@ -616,7 +616,7 @@ TEST_F(LuminaGlobalIndexTest, TestWriteWithNullAcrossMultipleBatches) {
                                                .ValueOrDie();
 
     // Batch 2: rows 3-5, null at row 3 → indexed ids: {4, 5}
-    std::shared_ptr<arrow::Array> batch2 = arrow::ipc::internal::json::ArrayFromJSON(data_type_,
+    std::shared_ptr<arrow::Array> batch2 = arrow::json::ArrayFromJSONString(data_type_,
                                                                                      R"([
         [null],
         [[1.0, 1.0, 1.0, 1.0]],

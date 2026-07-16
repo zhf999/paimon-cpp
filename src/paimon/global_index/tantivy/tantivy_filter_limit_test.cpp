@@ -122,7 +122,7 @@ class TantivyFilterLimitTest : public ::testing::Test {
 TEST_F(TantivyFilterLimitTest, LimitProducesScoredResultTopN) {
     // Three docs with very different term frequencies for "doc"; limit=2 must
     // pick the top 2 by score (doc 1 highest, then doc 2).
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(DataType(), R"([
+    auto array = arrow::json::ArrayFromJSONString(DataType(), R"([
         ["doc"],
         ["doc doc doc doc doc"],
         ["doc doc"]
@@ -149,7 +149,7 @@ TEST_F(TantivyFilterLimitTest, LimitProducesScoredResultTopN) {
 }
 
 TEST_F(TantivyFilterLimitTest, NoLimitReturnsBitmapResult) {
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(DataType(), R"([
+    auto array = arrow::json::ArrayFromJSONString(DataType(), R"([
         ["doc"], ["doc doc"], ["other"]
     ])")
                      .ValueOrDie();
@@ -169,7 +169,7 @@ TEST_F(TantivyFilterLimitTest, NoLimitReturnsBitmapResult) {
 }
 
 TEST_F(TantivyFilterLimitTest, PreFilterIntersectsWithoutLimit) {
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(DataType(), R"([
+    auto array = arrow::json::ArrayFromJSONString(DataType(), R"([
         ["alpha"], ["alpha"], ["alpha"], ["beta"]
     ])")
                      .ValueOrDie();
@@ -189,7 +189,7 @@ TEST_F(TantivyFilterLimitTest, PreFilterIntersectsWithoutLimit) {
 TEST_F(TantivyFilterLimitTest, PreFilterAppliedBeforeLimit) {
     // doc 0 has highest score for "doc" but is excluded by pre_filter; the
     // result must contain doc 1 only, even with limit=10.
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(DataType(), R"([
+    auto array = arrow::json::ArrayFromJSONString(DataType(), R"([
         ["doc doc doc doc doc"],
         ["doc doc"],
         ["doc"]
@@ -211,7 +211,7 @@ TEST_F(TantivyFilterLimitTest, PreFilterAppliedBeforeLimit) {
 }
 
 TEST_F(TantivyFilterLimitTest, EmptyPreFilterReturnsEmpty) {
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(DataType(), R"([
+    auto array = arrow::json::ArrayFromJSONString(DataType(), R"([
         ["alpha"], ["beta"]
     ])")
                      .ValueOrDie();
@@ -230,7 +230,7 @@ TEST_F(TantivyFilterLimitTest, EmptyPreFilterReturnsEmpty) {
 }
 
 TEST_F(TantivyFilterLimitTest, LimitGreaterThanMatchesReturnsAll) {
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(DataType(), R"([
+    auto array = arrow::json::ArrayFromJSONString(DataType(), R"([
         ["doc"], ["doc doc"], ["other"]
     ])")
                      .ValueOrDie();
@@ -257,7 +257,7 @@ TEST_F(TantivyFilterLimitTest, LimitGreaterThanMatchesReturnsAll) {
 
 // Path A: with_score=false, limit=None → BitmapGlobalIndexResult, all rows, no score.
 TEST_F(TantivyFilterLimitTest, WithScoreFalseLimitNoneAllRowsNoScore) {
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(DataType(), R"([
+    auto array = arrow::json::ArrayFromJSONString(DataType(), R"([
         ["doc"], ["doc doc"], ["doc doc doc"]
     ])")
                      .ValueOrDie();
@@ -280,7 +280,7 @@ TEST_F(TantivyFilterLimitTest, WithScoreFalseLimitNoneAllRowsNoScore) {
 // Path B: with_score=false, limit=N → BitmapGlobalIndexResult, any N matches,
 // no scoring (no BM25 sort). Used by `WHERE MATCH ... LIMIT N` without ORDER BY.
 TEST_F(TantivyFilterLimitTest, WithScoreFalseLimitNAnyNNoScore) {
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(DataType(), R"([
+    auto array = arrow::json::ArrayFromJSONString(DataType(), R"([
         ["doc"],
         ["doc doc doc doc doc"],
         ["doc doc"]
@@ -312,7 +312,7 @@ TEST_F(TantivyFilterLimitTest, WithScoreFalseLimitNAnyNNoScore) {
 // Path C (new in v0.2): with_score=true, limit=None → BitmapScoredGlobalIndexResult,
 // all rows + all scores, ordered by row_id asc.
 TEST_F(TantivyFilterLimitTest, WithScoreTrueLimitNoneAllRowsWithScore) {
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(DataType(), R"([
+    auto array = arrow::json::ArrayFromJSONString(DataType(), R"([
         ["doc"], ["doc doc"], ["doc doc doc"]
     ])")
                      .ValueOrDie();
@@ -339,7 +339,7 @@ TEST_F(TantivyFilterLimitTest, WithScoreTrueLimitNoneAllRowsWithScore) {
 // Equivalent to the v0.1 happy-path (LimitProducesScoredResultTopN), kept here
 // as an explicit anchor of the 4-path matrix.
 TEST_F(TantivyFilterLimitTest, WithScoreTrueLimitNTopNWithScore) {
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(DataType(), R"([
+    auto array = arrow::json::ArrayFromJSONString(DataType(), R"([
         ["doc"],
         ["doc doc doc doc doc"],
         ["doc doc"]
@@ -365,7 +365,7 @@ TEST_F(TantivyFilterLimitTest, WithScoreTrueLimitNTopNWithScore) {
 // even with limit set, the result is a BitmapGlobalIndexResult (NOT scored).
 // This catches v0.1 callers that relied on `limit >= 0` to implicitly get scores.
 TEST_F(TantivyFilterLimitTest, WithScoreDefaultIsFalse) {
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(DataType(), R"([
+    auto array = arrow::json::ArrayFromJSONString(DataType(), R"([
         ["doc"], ["doc doc"], ["doc doc doc"]
     ])")
                      .ValueOrDie();

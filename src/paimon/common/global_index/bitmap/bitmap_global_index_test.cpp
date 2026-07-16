@@ -22,6 +22,7 @@
 
 #include "arrow/c/bridge.h"
 #include "arrow/ipc/api.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/file_index/bitmap/bitmap_file_index.h"
 #include "paimon/common/global_index/wrap/file_index_writer_wrapper.h"
@@ -129,7 +130,7 @@ TEST_F(BitmapGlobalIndexTest, TestStringType) {
     auto type = arrow::utf8();
     auto write_index = [&](int32_t version) -> Result<GlobalIndexIOMeta> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([
         ["a"],
         [null],
@@ -196,7 +197,7 @@ TEST_F(BitmapGlobalIndexTest, TestIntType) {
     auto type = arrow::int32();
     auto write_index = [&](int32_t version) -> Result<GlobalIndexIOMeta> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([
         [0],
         [1],
@@ -247,7 +248,7 @@ TEST_F(BitmapGlobalIndexTest, TestTimestampType) {
     auto type = arrow::timestamp(arrow::TimeUnit::NANO);
     auto write_index = [&](int32_t version) -> Result<GlobalIndexIOMeta> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([
         [1745542802000123000],
         [1745542902000123000],
@@ -366,7 +367,7 @@ TEST_F(BitmapGlobalIndexTest, TestAllNull) {
     auto type = arrow::int32();
     auto write_index = [&](int32_t version) -> Result<GlobalIndexIOMeta> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([
         [null],
         [null],
@@ -406,7 +407,7 @@ TEST_F(BitmapGlobalIndexTest, TestEmpty) {
     auto type = arrow::int32();
     auto write_index = [&](int32_t version) -> Result<GlobalIndexIOMeta> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([])")
                 .ValueOrDie());
 

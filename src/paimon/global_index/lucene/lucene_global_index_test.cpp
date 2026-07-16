@@ -152,7 +152,7 @@ TEST_P(LuceneGlobalIndexTest, TestSimple) {
         {"lucene-fts.write.omit-term-freq-and-position", "false"},
         {"lucene-fts.read.buffer-size", std::to_string(read_buffer_size)},
         {"lucene-fts.write.tmp.directory", tmp_dir->Str()}};
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(data_type_,
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(data_type_,
                                                                                     R"([
         ["This is an test document."],
         ["This is an new document document document."],
@@ -333,7 +333,7 @@ TEST_P(LuceneGlobalIndexTest, TestSimpleChinese) {
         {"lucene-fts.jieba.tokenize-mode", "query"},
         {"lucene-fts.write.tmp.directory", tmp_dir->Str()}};
 
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(data_type_,
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(data_type_,
                                                                                     R"([
 ["QianWen 是一个基于 AI 的智能助手，类似于 Siri 和 Alexa。我们正在用 Python 开发 QianWen 的 Natural Language Understanding 模块，该模块支持多轮对话和意图识别功能，是新一代智能助手的核心技术之一。"],
 ["最近开源了一个新项目叫ｑｉａｎｗｅｎ（全角字符），功能类似之前的 Qianwen，是一个面向 AI 应用的智能助手。它不仅支持 Machine Learning 和 NLP 技术，还提供了可扩展的开发框架，便于开发者构建自己的智能助手系统。"],
@@ -446,7 +446,7 @@ TEST_F(LuceneGlobalIndexTest, TestInvalidWithoutTmpDir) {
 
     std::map<std::string, std::string> options = {
         {"lucene-fts.write.omit-term-freq-and-position", "false"}};
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(data_type_,
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(data_type_,
                                                                                     R"([
         ["This is an test document."]
     ])")

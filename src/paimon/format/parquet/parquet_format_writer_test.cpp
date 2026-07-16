@@ -32,6 +32,7 @@
 #include "arrow/c/helpers.h"
 #include "arrow/io/file.h"
 #include "arrow/ipc/api.h"
+#include "arrow/json/from_string.h"
 #include "arrow/memory_pool.h"
 #include "gtest/gtest.h"
 #include "paimon/common/utils/arrow/mem_utils.h"
@@ -135,9 +136,9 @@ class ParquetFormatWriterTest : public ::testing::Test {
                      int32_t row_group_count) const {
         auto file = arrow::io::ReadableFile::Open(file_path, arrow_pool_.get());
         ASSERT_TRUE(file.ok());
-        std::unique_ptr<::parquet::arrow::FileReader> reader;
-        auto status = ::parquet::arrow::OpenFile(file.ValueOrDie(), arrow_pool_.get(), &reader);
-        ASSERT_TRUE(status.ok()) << status.ToString();
+        auto reader_result = ::parquet::arrow::OpenFile(file.ValueOrDie(), arrow_pool_.get());
+        std::unique_ptr<::parquet::arrow::FileReader> reader = std::move(reader_result.ValueOrDie());
+        ASSERT_TRUE(reader_result.ok()) << reader_result.status().ToString();
         const ::parquet::FileMetaData* metadata = reader->parquet_reader()->metadata().get();
         const ::parquet::SchemaDescriptor* schema = metadata->schema();
         ASSERT_EQ(metadata->num_row_groups(), row_group_count);
@@ -450,7 +451,7 @@ TEST_F(ParquetFormatWriterTest, TestTimestampType) {
                                     DEFAULT_PARQUET_WRITER_MAX_MEMORY_USE, arrow_pool_));
 
     auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 ["1970-01-01 00:00:01", "1970-01-01 00:00:00.001", "1970-01-01 00:00:00.000001", "1970-01-01 00:00:00.000000001",
 "1970-01-01 00:00:02", "1970-01-01 00:00:00.002"],
 ["1970-01-01 00:00:01", null, "1970-01-01 00:00:00.000001", null,"1970-01-01 00:00:02", null]

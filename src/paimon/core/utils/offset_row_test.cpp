@@ -20,7 +20,7 @@
 #include <variant>
 
 #include "arrow/api.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/binary_row.h"
 #include "paimon/common/data/columnar/columnar_map.h"
@@ -67,9 +67,9 @@ TEST(OffsetRowTest, TestSimple) {
         BinaryRowGenerator::GenerateRowPtr({100, 200}, pool.get());
     internal_row.SetField(14, binary_row);
 
-    auto key = arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), "[1, 2, 3]").ValueOrDie();
+    auto key = arrow::json::ArrayFromJSONString(arrow::int32(), "[1, 2, 3]").ValueOrDie();
     auto value =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int64(), "[2, 4, 6]").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int64(), "[2, 4, 6]").ValueOrDie();
     auto map = std::make_shared<ColumnarMap>(key, value, pool, /*offset=*/0, /*length=*/3);
     internal_row.SetField(15, map);
     // do not set value at pos 16, therefore, pos 16 is null

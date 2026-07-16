@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "arrow/type.h"
 #include "gtest/gtest.h"
 #include "paimon/catalog/catalog.h"
@@ -281,7 +281,7 @@ class PkCompactionInteTest : public ::testing::Test,
             ASSERT_OK_AND_ASSIGN(std::shared_ptr<arrow::ChunkedArray> read_result,
                                  ReadResultCollector::CollectResult(batch_reader.get()));
             auto expected_array =
-                arrow::ipc::internal::json::ArrayFromJSON(data_type, iter->second).ValueOrDie();
+                arrow::json::ArrayFromJSONString(data_type, iter->second).ValueOrDie();
             auto expected_chunk_array = std::make_shared<arrow::ChunkedArray>(expected_array);
 
             bool success = expected_chunk_array->Equals(read_result);
@@ -477,7 +477,7 @@ TEST_P(PkCompactionInteTest, TestKeyValueTableDvCompactionWithMapSharedShredding
 [8, [["o", 110]], ")" + padding + R"("]
 ])";
         // clang-format on
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {}, 0, array, commit_id++));
     }
 
@@ -488,7 +488,7 @@ TEST_P(PkCompactionInteTest, TestKeyValueTableDvCompactionWithMapSharedShredding
         << "Initial full compact should not produce DV index files";
 
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             [1, [["a", 100], ["e", 500]], "u1"],
             [5, [["h", 80]], "u5"]
         ])")
@@ -497,7 +497,7 @@ TEST_P(PkCompactionInteTest, TestKeyValueTableDvCompactionWithMapSharedShredding
     }
 
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             [2, [["c", 300], ["f", 600], ["g", 700]], "u2"],
             [5, [["h", 800], ["i", 900]], "u5-new"]
         ])")
@@ -587,7 +587,7 @@ TEST_F(PkCompactionInteTest, DeduplicateWithDeletionVectors) {
 ["Eve",   10, 0, 5.0, ")" + padding + R"("]
 ])";
         // clang-format on
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {{"f1", "10"}}, 0, array, commit_id++));
     }
 
@@ -602,7 +602,7 @@ TEST_F(PkCompactionInteTest, DeduplicateWithDeletionVectors) {
 
     // Step 3: Write batch2 with overlapping keys and short padding (small level-0 file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 0, 101.0, "u1"],
             ["Bob",   10, 0, 102.0, "u2"]
         ])")
@@ -612,7 +612,7 @@ TEST_F(PkCompactionInteTest, DeduplicateWithDeletionVectors) {
 
     // Step 4: Write batch3 with overlapping keys and short padding (second small level-0 file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Bob",   10, 0, 202.0, "u3"],
             ["Carol", 10, 0, 203.0, "u4"]
         ])")
@@ -698,7 +698,7 @@ TEST_F(PkCompactionInteTest, CompactWithExternalPath) {
 
     // Step 1: Write initial data and commit.
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 0, 1.0],
             ["Bob",   10, 0, 2.0],
             ["Carol", 10, 0, 3.0]
@@ -709,7 +709,7 @@ TEST_F(PkCompactionInteTest, CompactWithExternalPath) {
 
     // Step 2: Write overlapping data to create a second level-0 file.
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 0, 101.0],
             ["Dave",  10, 0, 4.0]
         ])")
@@ -826,7 +826,7 @@ TEST_F(PkCompactionInteTest, AggMinWithAllNonNestedTypes) {
 ["Eve",   5, 50, 500, 5000, 50000, 5.5, false, 6.5, "RXZF", 5000000000, 5000, 500, "66666666.66", "66666666666666666666.66", ")" + padding + R"("]
 ])";
         // clang-format on
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {}, 0, array, commit_id++));
     }
 
@@ -838,7 +838,7 @@ TEST_F(PkCompactionInteTest, AggMinWithAllNonNestedTypes) {
     // Step 3: Write second batch with overlapping keys (first new level-0 file).
     // key=("Alice", 1) with smaller values, key=("Bob", 2) with larger values.
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 1, 5,  50,  500,  5000,  0.5, false, 1.5, "YQ==", 500000000,  500,  50,  "00000001.00", "00000000000000000001.00", "a"],
             ["Bob",   2, 30, 300, 3000, 30000, 3.5, true,  4.5, "enp6", 3000000000, 3000, 300, "99999999.99", "99999999999999999999.99", "b"]
         ])")
@@ -849,7 +849,7 @@ TEST_F(PkCompactionInteTest, AggMinWithAllNonNestedTypes) {
     // Step 4: Write third batch with overlapping keys (second new level-0 file).
     // key=("Alice", 1) with medium values, key=("Carol", 3) with smaller values.
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 1, 8,  80,  800,  8000,  1.0, true,  2.0, "YWI=", 800000000,  800,  80,  "05000000.00", "05000000000000000000.00", "c"],
             ["Carol", 3, 10, 100, 1000, 10000, 1.5, false, 2.5, "YQ==", 1000000000, 1000, 100, "11111111.11", "11111111111111111111.11", "d"]
         ])")
@@ -955,7 +955,7 @@ TEST_F(PkCompactionInteTest, AggMinWithPkInMiddle) {
 [500, "Eve",   2, 5.5, ")" + padding + R"("]
 ])";
         // clang-format on
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {}, 0, array, commit_id++));
     }
 
@@ -966,7 +966,7 @@ TEST_F(PkCompactionInteTest, AggMinWithPkInMiddle) {
 
     // Step 3: Write batch2 with overlapping keys (first new level-0 file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             [50,  "Alice", 3, 0.5, "a1"],
             [300, "Bob",   5, 3.5, "b1"]
         ])")
@@ -976,7 +976,7 @@ TEST_F(PkCompactionInteTest, AggMinWithPkInMiddle) {
 
     // Step 4: Write batch3 with overlapping keys (second new level-0 file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             [80,  "Alice", 3, 1.0, "a2"],
             [150, "Carol", 1, 1.5, "c1"]
         ])")
@@ -1077,7 +1077,7 @@ TEST_F(PkCompactionInteTest, DeduplicateWithSequenceFieldAndPkInMiddle) {
 [500, "Eve",   2, 50, 50, 5.5, ")" + padding + R"("]
 ])";
         // clang-format on
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {}, 0, array, commit_id++));
     }
 
@@ -1088,7 +1088,7 @@ TEST_F(PkCompactionInteTest, DeduplicateWithSequenceFieldAndPkInMiddle) {
 
     // Step 3: Write batch2 with overlapping keys (first new level-0 file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             [110, "Alice", 3, 10, 25, 1.1, "a1"],
             [210, "Bob",   5, 25, 10, 2.1, "b1"]
         ])")
@@ -1098,7 +1098,7 @@ TEST_F(PkCompactionInteTest, DeduplicateWithSequenceFieldAndPkInMiddle) {
 
     // Step 4: Write batch3 with overlapping keys (second new level-0 file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             [120, "Alice", 3, 10, 22, 1.2, "a2"],
             [310, "Carol", 1, 20, 25, 3.1, "c1"]
         ])")
@@ -1204,7 +1204,7 @@ TEST_F(PkCompactionInteTest, DeduplicateNestedTypesWithSequenceField) {
 ["Eve",   5, 500, [11,12],   ["baz",50],   [["q",7],["r",8]], ")" + pad + R"("]
 ])";
         // clang-format on
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {}, 0, array, commit_id++));
     }
 
@@ -1215,7 +1215,7 @@ TEST_F(PkCompactionInteTest, DeduplicateNestedTypesWithSequenceField) {
 
     // Step 3: Write batch2 with overlapping keys (first new level-0 file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 1, 150, [10,20],    ["hi",11],   [["z",9]],         "a1"],
             ["Bob",   2, 180, [40,50,60], ["bye",21],  [["b",10],["c",11]], "b1"]
         ])")
@@ -1225,7 +1225,7 @@ TEST_F(PkCompactionInteTest, DeduplicateNestedTypesWithSequenceField) {
 
     // Step 4: Write batch3 with overlapping keys (second new level-0 file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 1, 120, [99],       ["mid",12],  [["w",99]],        "a2"],
             ["Carol", 3, 250, [60,70],    ["qux",31],  [["o",12]],        "c1"]
         ])")
@@ -1311,7 +1311,7 @@ TEST_F(PkCompactionInteTest, CompactWithSchemaEvolution) {
     // As commit.force-compact = true, write data will force commit.
     std::vector<std::shared_ptr<CommitMessage>> write_msgs_p0;
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             [1, "Alice", 12, 194, 198, 196, 0, 199]
         ])")
                          .ValueOrDie();
@@ -1327,7 +1327,7 @@ TEST_F(PkCompactionInteTest, CompactWithSchemaEvolution) {
     // As commit.force-compact = true, write data will force commit
     std::vector<std::shared_ptr<CommitMessage>> write_msgs_p1;
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             [1, "Bob",   22, 124, 128, 126, 1, 129],
             [1, "Frank", 92, 904, 908, 906, 1, 909]
         ])")
@@ -1365,16 +1365,14 @@ TEST_F(PkCompactionInteTest, CompactWithSchemaEvolution) {
                                         arrow::field("_VALUE_KIND", arrow::int8()));
             auto result_type = arrow::struct_(fields_with_row_kind);
 
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto status = arrow::ipc::internal::json::ChunkedArrayFromJSON(result_type, {R"([
+            auto array_result = arrow::json::ChunkedArrayFromJSONString(result_type, {R"([
 [0, 1, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 2, 4, null, 6, 0, null],
 [0, 1, "Alice", 12, 194, 198, 196, 0, 199],
 [0, 1, "Paul",  502, 504, 508, 506, 0, 509]
-])"},
-                                                                           &expected_array);
-            ASSERT_TRUE(status.ok());
+])"});
+            ASSERT_TRUE(array_result.ok());
             ASSERT_TRUE(result_array);
-            ASSERT_TRUE(result_array->Equals(*expected_array));
+            ASSERT_TRUE(result_array->Equals(array_result.ValueOrDie()));
         }
 
         // Read partition (key0=1, key1=1)
@@ -1388,19 +1386,17 @@ TEST_F(PkCompactionInteTest, CompactWithSchemaEvolution) {
                                         arrow::field("_VALUE_KIND", arrow::int8()));
             auto result_type = arrow::struct_(fields_with_row_kind);
 
-            std::shared_ptr<arrow::ChunkedArray> expected_array;
-            auto status = arrow::ipc::internal::json::ChunkedArrayFromJSON(result_type, {R"([
+            auto array_result = arrow::json::ChunkedArrayFromJSONString(result_type, {R"([
 [0, 1, "Bob",   22, 124, 128, 126, 1, 129],
 [0, 1, "Emily", 32, 34, null, 36, 1, null],
 [0, 1, "Alex",  52, 514, 518, 516, 1, 519],
 [0, 1, "David", 62, 64, null, 66, 1, null],
 [0, 1, "Whether I shall turn out to be the hero of my own life.", 72, 74, null, 76, 1, null],
 [0, 1, "Frank", 92, 904, 908, 906, 1, 909]
-])"},
-                                                                           &expected_array);
-            ASSERT_TRUE(status.ok());
+])"});
+            ASSERT_TRUE(array_result.ok());
             ASSERT_TRUE(result_array);
-            ASSERT_TRUE(result_array->Equals(*expected_array));
+            ASSERT_TRUE(result_array->Equals(array_result.ValueOrDie()));
         }
     }
 }
@@ -1482,7 +1478,7 @@ TEST_F(PkCompactionInteTest, FileFormatPerLevelWithDV) {
 ["Eve",   10, 0, 5.0, ")" + padding + R"("]
 ])";
         // clang-format on
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK_AND_ASSIGN(write1_msgs,
                              WriteArray(table_path, {{"f1", "10"}}, 0, array, commit_id));
         verify_new_files(write1_msgs, /*expected_level=*/0, ".avro");
@@ -1502,7 +1498,7 @@ TEST_F(PkCompactionInteTest, FileFormatPerLevelWithDV) {
 
     // Step 3: Write batch2 with one overlapping key (small level-0 avro file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 0, 101.0, "u1"]
         ])")
                          .ValueOrDie();
@@ -1515,7 +1511,7 @@ TEST_F(PkCompactionInteTest, FileFormatPerLevelWithDV) {
 
     // Step 4: Write batch3 with one overlapping key (second small level-0 avro file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Bob", 10, 0, 202.0, "u2"]
         ])")
                          .ValueOrDie();
@@ -1615,7 +1611,7 @@ TEST_F(PkCompactionInteTest, ContinuousWriteWithBackgroundCompact) {
 
         auto write_batch = [&](const std::string& json_data) -> Status {
             auto array =
-                arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+                arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
             ArrowArray c_array;
             PAIMON_RETURN_NOT_OK_FROM_ARROW(arrow::ExportArray(*array, &c_array));
             auto record_batch = std::make_unique<RecordBatch>(
@@ -1725,7 +1721,7 @@ TEST_F(PkCompactionInteTest, DeduplicateWithRowKindAndDV) {
 ["Eve",   5, 5.0, ")" + padding + R"("]
 ])";
         // clang-format on
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, partition, bucket, array, commit_id++));
     }
 
@@ -1740,7 +1736,7 @@ TEST_F(PkCompactionInteTest, DeduplicateWithRowKindAndDV) {
 
     // Step 3: Write UPDATE_BEFORE + UPDATE_AFTER for "Bob", DELETE for "Carol" (small file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Bob",   2, 2.0,   "u1"],
             ["Bob",   2, 202.0, "u2"],
             ["Carol", 3, 3.0,   "d1"]
@@ -1821,7 +1817,7 @@ TEST_F(PkCompactionInteTest, WriteAndCompactWithBranch) {
     ASSERT_OK_AND_ASSIGN(auto file_store_write, FileStoreWrite::Create(std::move(write_context)));
 
     // dt=20240726, bucket-0 only has ["20240726", "cherry", 3] one row
-    auto write_array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+    auto write_array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["20240726", "cherry", 30],
             ["20240726", "grape", 40]
         ])")
@@ -1887,15 +1883,13 @@ TEST_F(PkCompactionInteTest, WriteAndCompactWithBranch) {
                                     arrow::field("_VALUE_KIND", arrow::int8()));
         auto result_type = arrow::struct_(fields_with_row_kind);
 
-        std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto status = arrow::ipc::internal::json::ChunkedArrayFromJSON(result_type, {R"([
+        auto array_result = arrow::json::ChunkedArrayFromJSONString(result_type, {R"([
 [0, "20240726", "cherry", 30],
 [0, "20240726", "grape", 40]
-])"},
-                                                                       &expected_array);
-        ASSERT_TRUE(status.ok());
+])"});
+        ASSERT_TRUE(array_result.ok());
         ASSERT_TRUE(result_array);
-        ASSERT_TRUE(result_array->Equals(*expected_array));
+        ASSERT_TRUE(result_array->Equals(array_result.ValueOrDie()));
     }
 }
 
@@ -1920,7 +1914,7 @@ TEST_F(PkCompactionInteTest, TestPartialUpdateNoDv) {
 
     // Step 1: Write batch_a — only f2 is non-null (f3=null).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 10,   null],
             ["Bob",   10, 20,   null]
         ])")
@@ -1930,7 +1924,7 @@ TEST_F(PkCompactionInteTest, TestPartialUpdateNoDv) {
 
     // Step 2: Write batch_b — only f3 is non-null (f2=null).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, null, 1.1],
             ["Bob",   10, null, 2.2]
         ])")
@@ -1940,7 +1934,7 @@ TEST_F(PkCompactionInteTest, TestPartialUpdateNoDv) {
 
     // Step 3: Write batch_c — update f2 for Alice only (f3=null).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 99, null]
         ])")
                          .ValueOrDie();
@@ -1984,7 +1978,7 @@ TEST_F(PkCompactionInteTest, TestFirstRowNoDV) {
 
     // Step 1: Write batch_a — first occurrence of Alice and Bob.
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 1, 1.0],
             ["Bob",   10, 2, 2.0]
         ])")
@@ -2003,7 +1997,7 @@ TEST_F(PkCompactionInteTest, TestFirstRowNoDV) {
 
     // Step 3: Write batch_b — duplicate Alice/Bob (should be ignored) + new Carol.
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 10, 10.0],
             ["Bob",   10, 20, 20.0],
             ["Carol", 10, 30, 30.0]
@@ -2068,7 +2062,7 @@ TEST_F(PkCompactionInteTest, TestPartialUpdateWithDV) {
             ["Eve",   10, 50,   5.0, ")" + padding + R"("]
         ])";
         // clang-format on
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {{"f1", "10"}}, 0, array, commit_id++));
     }
 
@@ -2084,7 +2078,7 @@ TEST_F(PkCompactionInteTest, TestPartialUpdateWithDV) {
     // Step 3: Write batch_b — partial update: update f2 only (f3=null) for Alice and Bob.
     // Small level-0 file overlapping with L5.
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 99,   null, "u1"],
             ["Bob",   10, 88,   null, "u2"]
         ])")
@@ -2095,7 +2089,7 @@ TEST_F(PkCompactionInteTest, TestPartialUpdateWithDV) {
     // Step 4: Write batch_c — partial update: update f3 only (f2=null) for Bob and Carol.
     // Second small level-0 file overlapping with both batch_b (L0) and L5.
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Bob",   10, null, 22.0, "u3"],
             ["Carol", 10, null, 33.0, "u4"]
         ])")
@@ -2193,7 +2187,7 @@ TEST_F(PkCompactionInteTest, TestDeduplicateWithDvInAllLevels) {
             ["Eve",   10, 0, 5.0, ")" + padding + R"("]
         ])";
         // clang-format on
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {{"f1", "10"}}, 0, array, commit_id++));
 
         ASSERT_OK_AND_ASSIGN(
@@ -2206,7 +2200,7 @@ TEST_F(PkCompactionInteTest, TestDeduplicateWithDvInAllLevels) {
     // Step 2: Write batch_2 (overlap Alice/Bob) → non-full compact.
     // L0 merges to intermediate level; DV marks Alice/Bob in L5.
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 0, 10.0, "v2a"],
             ["Bob",   10, 0, 20.0, "v2b"]
         ])")
@@ -2232,7 +2226,7 @@ TEST_F(PkCompactionInteTest, TestDeduplicateWithDvInAllLevels) {
     // Step 3: Write batch_3 (overlap Bob/Carol) → non-full compact.
     // DV marks Carol in L5.
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Bob",   10, 0, 200.0, "v3b"],
             ["Carol", 10, 0, 300.0, "v3c"]
         ])")
@@ -2257,7 +2251,7 @@ TEST_F(PkCompactionInteTest, TestDeduplicateWithDvInAllLevels) {
     // Step 4: Write batch_4 (overlap Carol/Dave) → non-full compact.
     // DV marks Carol in the file from Step 3, and Dave in L5.
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Carol", 10, 0, 3000.0, "v4c"],
             ["Dave",  10, 0, 4000.0, "v4d"]
         ])")
@@ -2282,7 +2276,7 @@ TEST_F(PkCompactionInteTest, TestDeduplicateWithDvInAllLevels) {
     // Step 5: Write batch_5 (overlap Dave/Eve) → leave at L0 (no compact).
     // This ensures L0 has data while higher levels also have files.
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Dave",  10, 0, 40000.0, "v5d"],
             ["Eve",   10, 0, 50000.0, "v5e"]
         ])")
@@ -2350,7 +2344,7 @@ TEST_F(PkCompactionInteTest, TestDeduplicateWithForceLookupNoDv) {
             ["Eve",   10, 0, 5.0, ")" + padding + R"("]
         ])";
         // clang-format on
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {{"f1", "10"}}, 0, array, commit_id++));
     }
 
@@ -2365,7 +2359,7 @@ TEST_F(PkCompactionInteTest, TestDeduplicateWithForceLookupNoDv) {
 
     // Step 3: Write batch2 with overlapping keys (small level-0 file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 0, 101.0, "u1"],
             ["Bob",   10, 0, 102.0, "u2"]
         ])")
@@ -2375,7 +2369,7 @@ TEST_F(PkCompactionInteTest, TestDeduplicateWithForceLookupNoDv) {
 
     // Step 4: Write batch3 with overlapping keys (second small level-0 file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Bob",   10, 0, 202.0, "u3"],
             ["Carol", 10, 0, 203.0, "u4"]
         ])")
@@ -2452,7 +2446,7 @@ TEST_F(PkCompactionInteTest, TestAggregateNoDvWithDropDelete) {
             ["Bob",   10, 20,  2.0],
             ["Carol", 10, 30,  3.0]
         ])";
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {{"f1", "10"}}, 0, array, commit_id++));
     }
 
@@ -2467,7 +2461,7 @@ TEST_F(PkCompactionInteTest, TestAggregateNoDvWithDropDelete) {
 
     // Step 3: Write batch2
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 5,  0.5],
             ["Bob",   10, 10, 1.0]
         ])")
@@ -2488,7 +2482,7 @@ TEST_F(PkCompactionInteTest, TestAggregateNoDvWithDropDelete) {
 
     // Step 5: Write batch3 — mix of INSERT and DELETE rows.
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Dave",  10, 40, 4.0],
             ["Alice", 10, 3,  0.1]
         ])")
@@ -2542,7 +2536,7 @@ TEST_F(PkCompactionInteTest, TestAggregateWithNoDvAndOrphanDelete) {
 
     // Step 1: Write INSERT rows for Alice and Bob only.
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 100, 10.0],
             ["Bob",   10, 200, 20.0]
         ])")
@@ -2563,7 +2557,7 @@ TEST_F(PkCompactionInteTest, TestAggregateWithNoDvAndOrphanDelete) {
     //   - DELETE Carol (orphan: Carol has no prior INSERT, so this is a retract with no base)
     //   - INSERT Dave (new key, no prior data)
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 30,  3.0],
             ["Carol", 10, 999, 99.9],
             ["Dave",  10, 50,  5.0]
@@ -2626,7 +2620,7 @@ TEST_F(PkCompactionInteTest, TestDuplicateWithDvAndOrphanDelete) {
             ["Bob",   10, 200, 2.0, ")" + padding + R"("]
         ])";
         // clang-format on
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {{"f1", "10"}}, 0, array, commit_id++));
     }
 
@@ -2646,7 +2640,7 @@ TEST_F(PkCompactionInteTest, TestDuplicateWithDvAndOrphanDelete) {
             ["Carol", 10, 999, 99.9, "u2"],
             ["Dave",  10, 50,  5.0, "u3"]
         ])";
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         std::vector<RecordBatch::RowKind> row_kinds = {RecordBatch::RowKind::DELETE,
                                                        RecordBatch::RowKind::DELETE,
                                                        RecordBatch::RowKind::INSERT};
@@ -2901,7 +2895,7 @@ TEST_F(PkCompactionInteTest, RemoteLookupFileWithExternalPath) {
 [500, "Eve",   2, 5.5, ")" + padding + R"("]
 ])";
         // clang-format on
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {}, 0, array, commit_id++));
     }
 
@@ -2913,7 +2907,7 @@ TEST_F(PkCompactionInteTest, RemoteLookupFileWithExternalPath) {
 
     // Step 3: Write batch2 with overlapping keys (first new level-0 file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             [50,  "Alice", 3, 0.5, "a1"],
             [300, "Bob",   5, 3.5, "b1"]
         ])")
@@ -2923,7 +2917,7 @@ TEST_F(PkCompactionInteTest, RemoteLookupFileWithExternalPath) {
 
     // Step 4: Write batch3 with overlapping keys (second new level-0 file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             [80,  "Alice", 3, 1.0, "a2"],
             [150, "Carol", 1, 1.5, "c1"]
         ])")
@@ -3031,7 +3025,7 @@ TEST_F(PkCompactionInteTest, RemoteLookupFileWithSchemaEvolution) {
 [500, "Eve",   2, 5.5, ")" + padding + R"("]
 ])";
         // clang-format on
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {}, 0, array, commit_id++));
     }
 
@@ -3061,7 +3055,7 @@ TEST_F(PkCompactionInteTest, RemoteLookupFileWithSchemaEvolution) {
 
     // Step 4: Write batch2 with overlapping keys (first new level-0 file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["0.5", "50",  "Alice", 3, "a1"],
             ["3.5", "300", "Bob",   5, "b1"]
         ])")
@@ -3071,7 +3065,7 @@ TEST_F(PkCompactionInteTest, RemoteLookupFileWithSchemaEvolution) {
 
     // Step 5: Write batch3 with overlapping keys (second new level-0 file).
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["1.0", "80",  "Alice", 3, "a2"],
             ["1.5", "150", "Carol", 1, "c1"]
         ])")
@@ -3258,7 +3252,7 @@ TEST_F(PkCompactionInteTest, PkDvAndAggWithIOException) {
 ])";
             // clang-format on
             auto array =
-                arrow::ipc::internal::json::ArrayFromJSON(data_type, json_data).ValueOrDie();
+                arrow::json::ArrayFromJSONString(data_type, json_data).ValueOrDie();
             ASSERT_OK(WriteAndCommit(table_path, {}, 0, array, commit_id++));
         }
 
@@ -3269,7 +3263,7 @@ TEST_F(PkCompactionInteTest, PkDvAndAggWithIOException) {
         ASSERT_TRUE(HasExtraLookupFiles(upgrade_msgs));
         // Step 3: Write batch2 with overlapping keys (first new level-0 file).
         {
-            auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+            auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             [50,  "Alice", 3, 0.5, "a1"],
             [300, "Bob",   5, 3.5, "b1"]
         ])")
@@ -3279,7 +3273,7 @@ TEST_F(PkCompactionInteTest, PkDvAndAggWithIOException) {
 
         // Step 4: Write batch3 with overlapping keys (second new level-0 file).
         {
-            auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+            auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             [80,  "Alice", 3, 1.0, "a2"],
             [150, "Carol", 1, 1.5, "c1"]
         ])")

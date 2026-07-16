@@ -25,7 +25,7 @@
 #include "arrow/api.h"
 #include "arrow/array/array_base.h"
 #include "arrow/c/abi.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/status.h"
 #include "paimon/testing/utils/read_result_collector.h"
@@ -43,7 +43,7 @@ TEST(ReaderUtilsTest, TestAddAllValidBitmap) {
             return;
         }
         auto array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), src_str).ValueOrDie();
+            arrow::json::ArrayFromJSONString(arrow::int32(), src_str).ValueOrDie();
         ASSERT_OK_AND_ASSIGN(auto batch, ReadResultCollector::GetReadBatch(array));
         auto batch_with_bitmap = ReaderUtils::AddAllValidBitmap(std::move(batch));
         auto& [c_batch, bitmap] = batch_with_bitmap;
@@ -69,9 +69,9 @@ TEST(ReaderUtilsTest, TestApplyBitmapToReadBatch) {
             return;
         }
         auto src_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), src_str).ValueOrDie();
+            arrow::json::ArrayFromJSONString(arrow::int32(), src_str).ValueOrDie();
         auto target_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), target_str).ValueOrDie();
+            arrow::json::ArrayFromJSONString(arrow::int32(), target_str).ValueOrDie();
         ASSERT_OK_AND_ASSIGN(auto src_batch, ReadResultCollector::GetReadBatch(src_array));
         auto batch_with_bitmap = std::make_pair(std::move(src_batch), std::move(bitmap));
         if (!erro_msg.empty()) {

@@ -29,7 +29,7 @@
 #include "arrow/array/util.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "arrow/util/checked_cast.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/blob_utils.h"
@@ -201,14 +201,14 @@ class FieldMappingReaderTest : public ::testing::Test {
                                            DataField(2, arrow::field("f2", arrow::int32())),
                                            DataField(3, arrow::field("f3", arrow::float64()))};
     std::shared_ptr<arrow::Array> f0_ =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(), R"(["Emily", "Bob", "Alex"])")
+        arrow::json::ArrayFromJSONString(arrow::utf8(), R"(["Emily", "Bob", "Alex"])")
             .ValueOrDie();
     std::shared_ptr<arrow::Array> f1_ =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), R"([10, 10, 10])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int32(), R"([10, 10, 10])").ValueOrDie();
     std::shared_ptr<arrow::Array> f2_ =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), R"([0, 0, 0])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int32(), R"([0, 0, 0])").ValueOrDie();
     std::shared_ptr<arrow::Array> f3_ =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::float64(), R"([15.1, 12.1, 16.1])")
+        arrow::json::ArrayFromJSONString(arrow::float64(), R"([15.1, 12.1, 16.1])")
             .ValueOrDie();
     std::vector<std::string> partition_keys_ = {"f1", "f2"};
     BinaryRow partition_ = BinaryRow::EmptyRow();
@@ -410,7 +410,7 @@ TEST_F(FieldMappingReaderTest, TestDictionaryTypeWithSchemaEvolution) {
     std::shared_ptr<arrow::Schema> data_schema =
         DataField::ConvertDataFieldsToArrowSchema(data_fields);
     auto data_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(data_schema->fields()), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(data_schema->fields()), R"([
         ["apple", 4.0, 5.1, 10, 100, 1000, 10000, true],
         ["banana", 4.1, 6.2, 10, 200, 1000, 20000, null],
         [null, 4.2, null, 10, 300, 1000, 30000, true],
@@ -435,7 +435,7 @@ TEST_F(FieldMappingReaderTest, TestDictionaryTypeWithSchemaEvolution) {
     std::vector<std::string> partition_keys = {"f3", "f5"};
     BinaryRow partition = BinaryRowGenerator::GenerateRow({10, 1000}, pool_.get());
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(read_schema->fields()), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(read_schema->fields()), R"([
         [10000, 5.1, "apple", 4.0, 1000, 10, null, true, 100],
         [20000, 6.2, "banana", 4.1, 1000, 10, null, null, 200],
         [30000, null, null, 4.2, 1000,  10, null, true, 300],
@@ -456,7 +456,7 @@ TEST_F(FieldMappingReaderTest, TestSchemaEvolutionWithModifyType) {
     std::shared_ptr<arrow::Schema> data_schema =
         DataField::ConvertDataFieldsToArrowSchema(data_fields);
     auto data_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(data_schema->fields()), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(data_schema->fields()), R"([
         ["true", 4.0, 5.1, 10],
         ["False", 4.1, 6.2, 10],
         [null, 4.2, null, 10],
@@ -477,7 +477,7 @@ TEST_F(FieldMappingReaderTest, TestSchemaEvolutionWithModifyType) {
     std::vector<std::string> partition_keys = {"f3"};
     BinaryRow partition = BinaryRowGenerator::GenerateRow({10}, pool_.get());
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(read_schema->fields()), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(read_schema->fields()), R"([
         [true, "4", 5, 10],
         [false, "4.1", 6, 10],
         [null, "4.2", null,  10],
@@ -498,7 +498,7 @@ TEST_F(FieldMappingReaderTest, TestSchemaEvolutionWithModifyTypeWithDict) {
     std::shared_ptr<arrow::Schema> data_schema =
         DataField::ConvertDataFieldsToArrowSchema(data_fields);
     auto data_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(data_schema->fields()), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(data_schema->fields()), R"([
         ["true", 4.0, 5.1, 10],
         ["false", 4.1, 6.2, 10],
         [null, 4.2, null, 10],
@@ -519,7 +519,7 @@ TEST_F(FieldMappingReaderTest, TestSchemaEvolutionWithModifyTypeWithDict) {
     std::vector<std::string> partition_keys = {"f3"};
     BinaryRow partition = BinaryRowGenerator::GenerateRow({10}, pool_.get());
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(read_schema->fields()), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(read_schema->fields()), R"([
         [true, "4", 5, 10],
         [false, "4.1", 6, 10],
         [null, "4.2", null,  10],
@@ -540,7 +540,7 @@ TEST_F(FieldMappingReaderTest, TestSchemaEvolutionWithModifyTypeWithPredicate) {
     std::shared_ptr<arrow::Schema> data_schema =
         DataField::ConvertDataFieldsToArrowSchema(data_fields);
     auto data_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(data_schema->fields()), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(data_schema->fields()), R"([
         ["true", 4.0, 5, 10],
         ["False", 4.1, 6, 10],
         [null, 4.2, null, 10],
@@ -579,10 +579,10 @@ TEST_F(FieldMappingReaderTest, TestReadWithSchemaEvolutionWithRenameAndModifyTyp
 
     auto null_array = arrow::MakeArrayOfNull(arrow::list(arrow::utf8()), /*length=*/3).ValueOrDie();
     std::shared_ptr<arrow::Array> f0_new =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::binary(), R"(["Emily", "Bob", "Alex"])")
+        arrow::json::ArrayFromJSONString(arrow::binary(), R"(["Emily", "Bob", "Alex"])")
             .ValueOrDie();
     std::shared_ptr<arrow::Array> f3_new =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(), R"(["15.1", "12.1", "16.1"])")
+        arrow::json::ArrayFromJSONString(arrow::utf8(), R"(["15.1", "12.1", "16.1"])")
             .ValueOrDie();
     std::shared_ptr<arrow::Array> expect_data =
         arrow::StructArray::Make({f2_, f0_new, null_array, f3_new, f1_}, read_schema->fields())
@@ -603,7 +603,7 @@ TEST_F(FieldMappingReaderTest, TestReadWithSchemaEvolutionPureRename) {
                                           DataField(1, arrow::field("f1", arrow::int32()))};
     auto data_schema = DataField::ConvertDataFieldsToArrowSchema(data_fields);
     auto data_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(data_schema->fields()),
+        arrow::json::ArrayFromJSONString(arrow::struct_(data_schema->fields()),
                                                   R"([
         ["Alice", 1],
         ["Bob", 2],
@@ -619,7 +619,7 @@ TEST_F(FieldMappingReaderTest, TestReadWithSchemaEvolutionPureRename) {
     // Expected output uses the post-rename names; verifies mapping actually
     // ran (PASSTHRU would keep f0/f1 and Equals would fail).
     auto expected = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(read_schema->fields()),
+        arrow::json::ArrayFromJSONString(arrow::struct_(read_schema->fields()),
                                                   R"([
         ["Alice", 1],
         ["Bob", 2],
@@ -648,7 +648,7 @@ TEST_F(FieldMappingReaderTest, TestReadWithSchemaEvolutionWithRenameAndModifyTyp
         /*field_index=*/3, /*field_name=*/"f0", FieldType::STRING,
         Literal(FieldType::STRING, literal_str.data(), literal_str.size()));
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(read_schema->fields()), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(read_schema->fields()), R"([
         [0, "Emily", null, "15.1", 10],
         [0, "Bob", null, "12.1", 10],
         [0, "Alex", null, "16.1", 10]
@@ -665,7 +665,7 @@ TEST_F(FieldMappingReaderTest, TestSchemaEvolutionWithDictType) {
     std::shared_ptr<arrow::Schema> data_schema =
         DataField::ConvertDataFieldsToArrowSchema(data_fields);
     auto data_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(data_schema->fields()), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(data_schema->fields()), R"([
         ["Bob", 4.0, 5.1, 10],
         ["Emily", 4.1, 6.2, 10],
         ["Alice", 4.2, null, 10],
@@ -686,7 +686,7 @@ TEST_F(FieldMappingReaderTest, TestSchemaEvolutionWithDictType) {
     std::vector<std::string> partition_keys = {"f3"};
     BinaryRow partition = BinaryRowGenerator::GenerateRow({10}, pool_.get());
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(read_schema->fields()), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(read_schema->fields()), R"([
         [10, "4", "Bob", 5],
         [10, "4.1", "Emily", 6],
         [10, "4.2", "Alice", null],
@@ -711,7 +711,7 @@ TEST_F(FieldMappingReaderTest, TestReadInlineBlobAsBinaryDataFile) {
         ["descriptor-2"]
     ])";
     auto data_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(data_schema->fields()), json_str)
+        arrow::json::ArrayFromJSONString(arrow::struct_(data_schema->fields()), json_str)
             .ValueOrDie());
 
     std::vector<DataField> read_fields = {
@@ -719,7 +719,7 @@ TEST_F(FieldMappingReaderTest, TestReadInlineBlobAsBinaryDataFile) {
     };
     auto read_schema = DataField::ConvertDataFieldsToArrowSchema(read_fields);
     auto expected = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(read_schema->fields()), json_str)
+        arrow::json::ArrayFromJSONString(arrow::struct_(read_schema->fields()), json_str)
             .ValueOrDie());
 
     CheckResult(data_schema, data_array, read_schema, /*predicate=*/nullptr,
@@ -740,7 +740,7 @@ TEST_F(FieldMappingReaderTest, TestReadWithSchemaEvolutionRenameCombinedCast) {
     };
     auto data_schema = DataField::ConvertDataFieldsToArrowSchema(data_fields);
     auto data_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(data_schema->fields()),
+        arrow::json::ArrayFromJSONString(arrow::struct_(data_schema->fields()),
                                                   R"([
         ["Bob", 100, 10, 1],
         ["Emily", 200, 20, 2],
@@ -757,7 +757,7 @@ TEST_F(FieldMappingReaderTest, TestReadWithSchemaEvolutionRenameCombinedCast) {
     auto read_schema = DataField::ConvertDataFieldsToArrowSchema(read_fields);
 
     auto expected = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(read_schema->fields()),
+        arrow::json::ArrayFromJSONString(arrow::struct_(read_schema->fields()),
                                                   R"([
         ["Bob", 100, "10", "1"],
         ["Emily", 200, "20", "2"],

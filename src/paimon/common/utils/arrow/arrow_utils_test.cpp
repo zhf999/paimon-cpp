@@ -18,6 +18,7 @@
 
 #include "arrow/api.h"
 #include "arrow/ipc/api.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/types/data_field.h"
 #include "paimon/testing/utils/testharness.h"
@@ -114,7 +115,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchSimple) {
     auto schema = arrow::schema({field});
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
       [20],
       [null],
       [10]
@@ -127,7 +128,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchSimple) {
     }
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
       [20],
       [10]
 ])")
@@ -145,7 +146,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchWithStruct) {
     auto schema = arrow::schema({struct_field});
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({struct_field}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({struct_field}), R"([
       [null]
 ])")
                 .ValueOrDie();
@@ -155,7 +156,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchWithStruct) {
     }
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({struct_field}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({struct_field}), R"([
       [[1, null]],
       [[null, 10.0]]
 ])")
@@ -166,7 +167,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchWithStruct) {
     }
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({struct_field}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({struct_field}), R"([
       [[1, null]],
       [[2, 10.0]]
 ])")
@@ -182,7 +183,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchWithList) {
 
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({list_field}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({list_field}), R"([
       [[1, 2, null, 4, 5]],
       [null]
 ])")
@@ -193,7 +194,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchWithList) {
     }
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({list_field}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({list_field}), R"([
       [[1, 2, null, 4, 5]]
 ])")
                 .ValueOrDie();
@@ -203,7 +204,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchWithList) {
     }
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({list_field}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({list_field}), R"([
       [[1, 2, 3, 4, 5]]
 ])")
                 .ValueOrDie();
@@ -220,7 +221,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchWithMap) {
 
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({map_field}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({map_field}), R"([
       [null]
 ])")
                 .ValueOrDie();
@@ -230,7 +231,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchWithMap) {
     }
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({map_field}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({map_field}), R"([
       [[[1, null]]]
 ])")
                 .ValueOrDie();
@@ -263,7 +264,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchComplex) {
     // test inner1
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({inner_child1, inner_child2, inner_child3}), R"([
 [[["outer_key", [1, 2, 3, null]]], [["outer_key", [["key1", 1]]]], [["outer_key", [100, 200]]]]
 ])")
@@ -274,7 +275,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchComplex) {
     }
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({inner_child1, inner_child2, inner_child3}), R"([
 [[["outer_key", [1, 2, 3]]], [["outer_key", [["key1", 1]]]], [["outer_key", [100, 200]]]],
 [[["outer_key", null]], [["outer_key", [["key1", 1]]]], [["outer_key", [100, 200]]]],
@@ -288,7 +289,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchComplex) {
     // test inner2
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({inner_child1, inner_child2, inner_child3}), R"([
 [[["outer_key", [1, 2, 3]]], [["outer_key", null]], [["outer_key", [100, 200]]]],
 [[["outer_key", null]], [["outer_key", [["key1", null]]]], [["outer_key", [100, 200]]]]
@@ -300,7 +301,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchComplex) {
     }
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({inner_child1, inner_child2, inner_child3}), R"([
 [[["outer_key", [1, 2, 3]]], [["outer_key", null]], [["outer_key", [100, 200]]]],
 [[["outer_key", [1, 2, 3]]], null, [["outer_key", [100, 200]]]]
@@ -313,7 +314,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchComplex) {
     // test inner3
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({inner_child1, inner_child2, inner_child3}), R"([
 [[["outer_key", [1, 2, 3]]], [["outer_key", null]], [["outer_key", null]]],
 [[["outer_key", null]], [["outer_key", [["key1", 2]]]], [["outer_key", [100, null]]]]
@@ -325,7 +326,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchComplex) {
     }
     {
         std::shared_ptr<arrow::Array> array =
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({inner_child1, inner_child2, inner_child3}), R"([
 [[["outer_key", [1, 2, 3]]], [["outer_key", null]], [["outer_key", null]]],
 [[["outer_key", null]], [["outer_key", [["key1", 2]]]], null]
@@ -340,7 +341,7 @@ TEST(ArrowUtilsTest, TestCheckNullableMatchComplex) {
 TEST(ArrowUtilsTest, TestRemoveFieldFromStructArrayFieldNotFound) {
     auto struct_type =
         arrow::struct_({arrow::field("a", arrow::int32()), arrow::field("b", arrow::utf8())});
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(
+    auto src_array = arrow::json::ArrayFromJSONString(
                          struct_type, R"([{"a":1,"b":"x"},{"a":2,"b":"y"},{"a":3,"b":"z"}])")
                          .ValueOrDie();
     auto src_struct_array = std::static_pointer_cast<arrow::StructArray>(src_array);
@@ -357,7 +358,7 @@ TEST(ArrowUtilsTest, TestRemoveFieldFromStructArraySuccess) {
         arrow::struct_({arrow::field("a", arrow::int32()), arrow::field("b", arrow::utf8()),
                         arrow::field("c", arrow::int64())});
     auto src_array =
-        arrow::ipc::internal::json::ArrayFromJSON(
+        arrow::json::ArrayFromJSONString(
             struct_type,
             R"([{"a":1,"b":"x","c":10},{"a":2,"b":"y","c":20},{"a":3,"b":"z","c":30}])")
             .ValueOrDie();
@@ -368,7 +369,7 @@ TEST(ArrowUtilsTest, TestRemoveFieldFromStructArraySuccess) {
 
     auto expected_type =
         arrow::struct_({arrow::field("a", arrow::int32()), arrow::field("c", arrow::int64())});
-    auto expected_array = arrow::ipc::internal::json::ArrayFromJSON(
+    auto expected_array = arrow::json::ArrayFromJSONString(
                               expected_type, R"([{"a":1,"c":10},{"a":2,"c":20},{"a":3,"c":30}])")
                               .ValueOrDie();
     auto expected_struct_array = std::static_pointer_cast<arrow::StructArray>(expected_array);

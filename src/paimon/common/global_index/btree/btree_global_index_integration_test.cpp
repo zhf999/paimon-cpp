@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/compression/block_compression_factory.h"
 #include "paimon/common/factories/io_hook.h"
@@ -132,7 +132,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadIntData) {
                          indexer->CreateWriter("int_field", c_schema.get(), file_writer, pool_));
     // Data layout (row_id -> value):
     //   0->1, 1->1, 2->null, 3->2, 4->2, 5->null, 6->3, 7->4, 8->5, 9->5, 10->5, 11->null
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         [1],
         [1],
         [null],
@@ -290,7 +290,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadStringData) {
     // Data layout (row_id -> value):
     //   0->"apple", 1->"apricot", 2->null, 3->"banana", 4->"blueberry",
     //   5->null, 6->"cherry", 7->"cherry", 8->"date"
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         ["apple"],
         ["apricot"],
         [null],
@@ -469,7 +469,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadBigIntData) {
                          indexer->CreateWriter("bigint_field", c_schema.get(), file_writer, pool_));
     // Data layout (row_id -> value):
     //   0->100, 1->null, 2->200, 3->200, 4->300, 5->null, 6->400
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         [100],
         [null],
         [200],
@@ -558,7 +558,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadFloatData) {
                          indexer->CreateWriter("float_field", c_schema.get(), file_writer, pool_));
     // Data layout (row_id -> value):
     //   0->1.0, 1->null, 2->2.5, 3->2.5, 4->3.0, 5->null, 6->4.5
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         [1.0],
         [null],
         [2.5],
@@ -646,7 +646,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadDoubleData) {
                          indexer->CreateWriter("double_field", c_schema.get(), file_writer, pool_));
     // Data layout (row_id -> value):
     //   0->1.1, 1->null, 2->2.2, 3->2.2, 4->3.3, 5->null, 6->4.4
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         [1.1],
         [null],
         [2.2],
@@ -734,7 +734,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadAllNonNull) {
                          indexer->CreateWriter("int_field", c_schema.get(), file_writer, pool_));
     // All values are non-null
     // Data layout (row_id -> value): 0->10, 1->20, 2->20, 3->30, 4->40, 5->50
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         [10],
         [20],
         [20],
@@ -840,7 +840,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadBoolData) {
                          indexer->CreateWriter("bool_field", c_schema.get(), file_writer, pool_));
     // Data layout (row_id -> value), sorted by key (false < true):
     //   0->false, 1->false, 2->null, 3->false, 4->true, 5->null, 6->true, 7->true
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         [false],
         [false],
         [null],
@@ -914,7 +914,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadTinyIntData) {
         auto writer, indexer->CreateWriter("tinyint_field", c_schema.get(), file_writer, pool_));
     // Data layout (row_id -> value):
     //   0->-10, 1->null, 2->0, 3->10, 4->10, 5->null, 6->20
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         [-10],
         [null],
         [0],
@@ -993,7 +993,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadSmallIntData) {
         auto writer, indexer->CreateWriter("smallint_field", c_schema.get(), file_writer, pool_));
     // Data layout (row_id -> value):
     //   0->-100, 1->null, 2->0, 3->100, 4->100, 5->null, 6->200
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         [-100],
         [null],
         [0],
@@ -1073,7 +1073,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadTimestampCompactData) {
                          indexer->CreateWriter("ts_field", c_schema.get(), file_writer, pool_));
     // Data layout (row_id -> value in millis):
     //   0->1000, 1->null, 2->2000, 3->2000, 4->3000, 5->null, 6->4000
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         [1000],
         [null],
         [2000],
@@ -1154,7 +1154,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadTimestampNonCompactData) {
     // Data layout (row_id -> value in micros):
     //   0->1000000 (1s), 1->null, 2->2000123 (2s+123us), 3->2000123, 4->3000456, 5->null,
     //   6->4000789
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         [1000000],
         [null],
         [2000123],
@@ -1239,7 +1239,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadDecimalCompactData) {
     // Data layout (row_id -> value, stored as unscaled int with scale=2):
     //   0->1.00, 1->null, 2->2.50, 3->2.50, 4->3.00,
     //   5->null, 6->4.50
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         ["1.00"],
         [null],
         ["2.50"],
@@ -1321,7 +1321,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadDecimalNonCompactData) {
     //   0->1.000, 1->null, 2->2.500, 3->2.500,
     //   4->3.000, 5->null, 6->4.500
     // For non-compact decimal (precision=25), Arrow JSON uses string representation of unscaled
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         ["1.000"],
         [null],
         ["2.500"],
@@ -1399,7 +1399,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadAllNull) {
     ASSERT_OK_AND_ASSIGN(auto writer,
                          indexer->CreateWriter("int_field", c_schema.get(), file_writer, pool_));
     // All values are null
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         [null],
         [null],
         [null],
@@ -1746,7 +1746,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, AddBatchWithMismatchedRowIds) {
     ASSERT_OK_AND_ASSIGN(auto indexer, BTreeGlobalIndexer::Create(options));
     ASSERT_OK_AND_ASSIGN(auto writer,
                          indexer->CreateWriter("int_field", c_schema.get(), file_writer, pool_));
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         [1],
         [2],
         [3]
@@ -1774,7 +1774,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, AddBatchWithNonMonotonicKeys) {
     ASSERT_OK_AND_ASSIGN(auto writer,
                          indexer->CreateWriter("int_field", c_schema.get(), file_writer, pool_));
     // Write decreasing keys: 3, 2, 1
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         [3],
         [2],
         [1]
@@ -1843,7 +1843,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, TestIOException) {
         CHECK_HOOK_STATUS(writer_result.status(), i);
         auto writer = std::move(writer_result).value();
 
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+        auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
             [1], [2], [null], [3], [4], [5]
         ])")
                          .ValueOrDie();
@@ -1905,7 +1905,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, WriteAndReadMultiFilesWithMetaSelector) 
         auto c_schema = CreateArrowSchema(field);
         ASSERT_OK_AND_ASSIGN(
             auto writer, indexer->CreateWriter("int_field", c_schema.get(), file_writer, pool_));
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), json_data)
+        auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), json_data)
                          .ValueOrDie();
         ArrowArray c_array;
         ASSERT_TRUE(arrow::ExportArray(*array, &c_array).ok());
@@ -2044,7 +2044,7 @@ TEST_P(BTreeGlobalIndexIntegrationTest, TestRangeQuery) {
     // Data layout
     //   0->"aaa", 1->"aab", 2->"bba", 3->"bbb", 4->"bbc",
     //   5->null, 6->"cca", 7->"ccb", 8->"ddd"
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({field}), R"([
+    auto array = arrow::json::ArrayFromJSONString(arrow::struct_({field}), R"([
         ["aaa"],
         ["aab"],
         ["bba"],

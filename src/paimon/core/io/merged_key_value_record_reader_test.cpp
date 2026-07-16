@@ -21,7 +21,7 @@
 
 #include "arrow/api.h"
 #include "arrow/array/array_nested.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/table/special_fields.h"
 #include "paimon/common/types/data_field.h"
@@ -63,7 +63,7 @@ TEST_F(MergedKeyValueRecordReaderTest, TestMergeAcrossUnderlyingBatches) {
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(value_schema)->fields());
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 1, 10, 20, 30],
         [1, 0, 1, 1, 11, 21, 31],
         [2, 0, 2, 2, 12, 22, 32],
@@ -109,7 +109,7 @@ TEST_F(MergedKeyValueRecordReaderTest, TestSkipMergedNulloptResultInHasNext) {
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(value_schema)->fields());
 
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 3, 1, 10],
         [3, 3, 1, 11],
         [2, 3, 2, 200],

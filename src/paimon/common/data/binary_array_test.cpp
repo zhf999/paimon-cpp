@@ -22,7 +22,7 @@
 
 #include "arrow/api.h"
 #include "arrow/array/array_nested.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "arrow/util/checked_cast.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/binary_array_writer.h"
@@ -328,7 +328,7 @@ TEST(BinaryArrayTest, TestNullValue) {
 
 TEST(BinaryArrayTest, TestFromLongArray) {
     auto pool = GetDefaultPool();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::list(arrow::int64()),
+    auto f1 = arrow::json::ArrayFromJSONString(arrow::list(arrow::int64()),
                                                         R"([[123, null], [789], [12345], [12]])")
                   .ValueOrDie();
     auto list_array = arrow::internal::checked_pointer_cast<arrow::ListArray>(f1);
@@ -359,7 +359,7 @@ TEST(BinaryArrayTest, TestFromIntArray) {
 
 TEST(BinaryArrayTest, TestFromAllNullLongArray) {
     auto pool = GetDefaultPool();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::list(arrow::int64()),
+    auto f1 = arrow::json::ArrayFromJSONString(arrow::list(arrow::int64()),
                                                         R"([[null, null], [789], [12345], [12]])")
                   .ValueOrDie();
     auto list_array = arrow::internal::checked_pointer_cast<arrow::ListArray>(f1);

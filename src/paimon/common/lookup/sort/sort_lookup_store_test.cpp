@@ -16,6 +16,7 @@
 
 #include "arrow/api.h"
 #include "arrow/ipc/api.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/columnar/columnar_row.h"
 #include "paimon/common/data/serializer/row_compacted_serializer.h"
@@ -51,7 +52,7 @@ TEST(SortLookupStoreTest, TestSimple) {
         ASSERT_OK_AND_ASSIGN(auto writer, factory->CreateWriter(fs, file_path, bloom_filter, pool));
 
         std::shared_ptr<arrow::Array> key_array =
-            arrow::ipc::internal::json::ArrayFromJSON(key_type,
+            arrow::json::ArrayFromJSONString(key_type,
                                                       R"([
         ["Alex"],
         ["Alice"],
@@ -62,7 +63,7 @@ TEST(SortLookupStoreTest, TestSimple) {
     ])")
                 .ValueOrDie();
         std::shared_ptr<arrow::Array> value_array =
-            arrow::ipc::internal::json::ArrayFromJSON(value_type,
+            arrow::json::ArrayFromJSONString(value_type,
                                                       R"([
         [0],
         [10],

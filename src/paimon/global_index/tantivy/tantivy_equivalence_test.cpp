@@ -204,7 +204,7 @@ class TantivyEquivalenceTest : public ::testing::Test {
 
 TEST_F(TantivyEquivalenceTest, EnglishBagOfWordsBattery) {
     auto data_type = arrow::struct_({arrow::field("f0", arrow::utf8())});
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+    auto array = arrow::json::ArrayFromJSONString(data_type, R"([
         ["alpha beta gamma delta"],
         ["alpha alpha alpha beta"],
         ["beta gamma delta epsilon"],
@@ -243,7 +243,7 @@ TEST_F(TantivyEquivalenceTest, EnglishBagOfWordsBattery) {
 
 TEST_F(TantivyEquivalenceTest, ChineseQueryModeBattery) {
     auto data_type = arrow::struct_({arrow::field("f0", arrow::utf8())});
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+    auto array = arrow::json::ArrayFromJSONString(data_type, R"([
 ["智能助手 AI 模块 开发"],
 ["智能助手 在 Python 开发 中"],
 ["AI 助手 开发 框架"],
@@ -279,7 +279,7 @@ TEST_F(TantivyEquivalenceTest, ChineseQueryModeBattery) {
 
 TEST_F(TantivyEquivalenceTest, PreFilterIntersectionEquivalent) {
     auto data_type = arrow::struct_({arrow::field("f0", arrow::utf8())});
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+    auto array = arrow::json::ArrayFromJSONString(data_type, R"([
         ["alpha beta"],
         ["alpha gamma"],
         ["alpha delta"],
@@ -342,7 +342,7 @@ TEST_F(TantivyEquivalenceTest, BenchmarkBuildAndQuery) {
     json += "]";
 
     auto data_type = arrow::struct_({arrow::field("f0", arrow::utf8())});
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, json).ValueOrDie();
+    auto array = arrow::json::ArrayFromJSONString(data_type, json).ValueOrDie();
 
     auto time_ms = [](auto&& fn) {
         auto t0 = std::chrono::steady_clock::now();

@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "arrow/type.h"
 #include "gtest/gtest.h"
 #include "paimon/catalog/catalog.h"
@@ -189,7 +189,7 @@ TEST_F(AppendCompactCoordinatorTest, TestRunCompactsAllPartitions) {
 
     // Write batch 1: partition f1=10
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 1, 11.1],
             ["Bob", 10, 0, 12.1],
             ["Emily", 10, 0, 13.1],
@@ -202,7 +202,7 @@ TEST_F(AppendCompactCoordinatorTest, TestRunCompactsAllPartitions) {
 
     // Write batch 2: partition f1=10
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Emily", 10, 0, 15.1],
             ["Bob", 10, 0, 12.1],
             ["Alex", 10, 0, 16.1]
@@ -214,7 +214,7 @@ TEST_F(AppendCompactCoordinatorTest, TestRunCompactsAllPartitions) {
 
     // Write batch 3: partition f1=20
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Lucy", 20, 1, 14.1],
             ["Paul", 20, 1, null]
         ])")
@@ -225,7 +225,7 @@ TEST_F(AppendCompactCoordinatorTest, TestRunCompactsAllPartitions) {
 
     // Write batch 4: partition f1=20 (another small file)
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["David", 20, 0, 17.1]
         ])")
                          .ValueOrDie();
@@ -301,7 +301,7 @@ TEST_F(AppendCompactCoordinatorTest, TestRunCompactsSinglePartition) {
 
     // Write 2 batches to f1=10
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 1, 11.1],
             ["Bob", 10, 0, 12.1]
         ])")
@@ -309,7 +309,7 @@ TEST_F(AppendCompactCoordinatorTest, TestRunCompactsSinglePartition) {
         ASSERT_OK(WriteAndCommit(table_path, {{"f1", "10"}}, 0, array, 0));
     }
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Emily", 10, 0, 13.1]
         ])")
                          .ValueOrDie();
@@ -318,14 +318,14 @@ TEST_F(AppendCompactCoordinatorTest, TestRunCompactsSinglePartition) {
 
     // Write 2 batches to f1=20
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Lucy", 20, 1, 14.1]
         ])")
                          .ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {{"f1", "20"}}, 0, array, 2));
     }
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Paul", 20, 0, 15.1]
         ])")
                          .ValueOrDie();
@@ -381,14 +381,14 @@ TEST_F(AppendCompactCoordinatorTest, TestNoCompactWhenConditionsNotMet) {
 
     // Write only 2 files (less than min_file_num=3)
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 1, 11.1]
         ])")
                          .ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {}, 0, array, 0));
     }
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Bob", 10, 0, 12.1]
         ])")
                          .ValueOrDie();
@@ -431,14 +431,14 @@ TEST_F(AppendCompactCoordinatorTest, TestCompactNonExistentPartition) {
 
     // Write data only to f1=10
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 1, 11.1]
         ])")
                          .ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {{"f1", "10"}}, 0, array, 0));
     }
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Bob", 10, 0, 12.1]
         ])")
                          .ValueOrDie();
@@ -523,7 +523,7 @@ TEST_F(AppendCompactCoordinatorTest, TestCompactWithExternalPath) {
 
     // Write 2 batches
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 1, 11.1],
             ["Bob", 10, 0, 12.1]
         ])")
@@ -531,7 +531,7 @@ TEST_F(AppendCompactCoordinatorTest, TestCompactWithExternalPath) {
         ASSERT_OK(WriteAndCommit(table_path, {}, 0, array, 0));
     }
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Emily", 10, 0, 13.1]
         ])")
                          .ValueOrDie();
@@ -605,14 +605,14 @@ TEST_F(AppendCompactCoordinatorTest, TestNoCompactWhenFileSizeExceedsThreshold) 
 
     // Write 2 files
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 1, 11.1]
         ])")
                          .ValueOrDie();
         ASSERT_OK(WriteAndCommit(table_path, {}, 0, array, 0));
     }
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Bob", 10, 0, 12.1]
         ])")
                          .ValueOrDie();
@@ -658,7 +658,7 @@ TEST_F(AppendCompactCoordinatorTest, TestCompactViaEnoughContent) {
 
     // Write 2 files
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Alice", 10, 1, 11.1],
             ["Bob", 10, 0, 12.1]
         ])")
@@ -666,7 +666,7 @@ TEST_F(AppendCompactCoordinatorTest, TestCompactViaEnoughContent) {
         ASSERT_OK(WriteAndCommit(table_path, {}, 0, array, 0));
     }
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type, R"([
             ["Emily", 10, 0, 13.1]
         ])")
                          .ValueOrDie();
@@ -719,7 +719,7 @@ TEST_F(AppendCompactCoordinatorTest, TestCompactWithSchemaEvolution) {
 
     // Write batch with schema-0
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type_v0, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type_v0, R"([
             ["Alice", 10, 1, 11.1],
             ["Bob", 20, 2, 22.2]
         ])")
@@ -751,7 +751,7 @@ TEST_F(AppendCompactCoordinatorTest, TestCompactWithSchemaEvolution) {
 
     // Write batch with schema-1
     {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type_v1, R"([
+        auto array = arrow::json::ArrayFromJSONString(data_type_v1, R"([
             [30, "three", 300, "Carol"]
         ])")
                          .ValueOrDie();

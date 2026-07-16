@@ -24,7 +24,7 @@
 #include "arrow/api.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/commit_context.h"
 #include "paimon/common/types/data_field.h"
@@ -115,7 +115,7 @@ class NestedColumnPruningInteTest : public ::testing::Test,
         expected_fields.insert(expected_fields.begin(), arrow::field("_VALUE_KIND", arrow::int8()));
         auto expected_type = arrow::struct_(expected_fields);
         auto expected = std::make_shared<arrow::ChunkedArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(expected_type, expected_json).ValueOrDie());
+            arrow::json::ArrayFromJSONString(expected_type, expected_json).ValueOrDie());
         AssertChunkedArrayEquals(expected, actual);
     }
 
@@ -794,7 +794,7 @@ TEST_P(NestedColumnPruningInteTest, PruneNestedStructWithSpecialFields) {
     ASSERT_TRUE(nested_col->type()->Equals(expected_nested_type));
 
     auto expected_nested_array =
-        arrow::ipc::internal::json::ArrayFromJSON(expected_nested_type, R"([
+        arrow::json::ArrayFromJSONString(expected_nested_type, R"([
             [[100]],
             [[200]],
             [[300]]
@@ -1321,7 +1321,7 @@ TEST_P(NestedColumnPruningInteTest, MapSelectedKeysWithOrcDictionaryEncodedMap) 
         arrow::field("f0", arrow::int32()),
         arrow::field("f1", arrow::map(arrow::utf8(), arrow::utf8())),
     });
-    auto expected_array = arrow::ipc::internal::json::ArrayFromJSON(expected_type, R"([
+    auto expected_array = arrow::json::ArrayFromJSONString(expected_type, R"([
         [0, 1, [["a", "v1"], ["c", "v3"]]],
         [0, 2, [["a", "v1"], ["c", "v3"]]],
         [0, 3, [["a", "v1"]]],

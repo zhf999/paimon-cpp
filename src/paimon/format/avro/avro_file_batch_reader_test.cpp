@@ -23,6 +23,7 @@
 #include "arrow/api.h"
 #include "arrow/c/bridge.h"
 #include "arrow/ipc/api.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/utils/path_util.h"
 #include "paimon/core/manifest/manifest_file.h"
@@ -101,16 +102,13 @@ TEST_F(AvroFileBatchReaderTest, TestReadDataWithNull) {
 
     auto arrow_data_type = arrow::struct_(fields);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         ["Alex", 2, 3, "Alex", "20250326", 18,   10.1],
         ["Bob",  3, 3, "Bob",  "20250326", 19,   11.1],
         ["Evan", 1, 0, "Evan", "20250326", null, 14.1]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok()) << array_status.ToString();
-    ASSERT_TRUE(result_array->Equals(expected_array));
-    ASSERT_TRUE(expected_array->Equals(result_array));
+    ])"});
+    ASSERT_TRUE(array_status.ok()) << array_status.status().ToString();
+    ASSERT_TRUE(array_status.ValueOrDie()->Equals(result_array));
     auto read_metrics = reader_holder->GetReaderMetrics();
     ASSERT_TRUE(read_metrics);
 }
@@ -145,18 +143,17 @@ TEST_F(AvroFileBatchReaderTest, TestReadWithDifferentBatchSize) {
     data_str.append("]");
 
     std::shared_ptr<arrow::Array> src_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, data_str).ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow_data_type, data_str).ValueOrDie();
     ASSERT_TRUE(src_array);
     WriteData(src_array, file_path, /*compression=*/"zstd");
 
     for (int32_t batch_size : {1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1}) {
         auto [reader_holder, result_array] = ReadData(file_path, batch_size);
-        std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(
-            arrow_data_type, {data_str}, &expected_array);
-        ASSERT_TRUE(array_status.ok()) << array_status.ToString();
-        ASSERT_TRUE(result_array->Equals(expected_array));
-        ASSERT_TRUE(expected_array->Equals(result_array));
+        auto array_status = arrow::json::ChunkedArrayFromJSONString(
+            arrow_data_type, {data_str});
+        ASSERT_TRUE(array_status.ok()) << array_status.status().ToString();
+        ASSERT_TRUE(array_status.ValueOrDie()->Equals(result_array));
+        ASSERT_TRUE(result_array->Equals(array_status.ValueOrDie()));
     }
 }
 
@@ -184,16 +181,14 @@ TEST_F(AvroFileBatchReaderTest, TestReadAllTypes) {
         arrow::field("f16", arrow::decimal128(19, 19))};
 
     auto arrow_data_type = arrow::struct_(fields);
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [true, 127, 32767, 2147483647, 9999999999999, 1234.56, 1234567890.0987654321, "aa", "qq", [0.1, 0.2], [true, null], "1970-01-01 00:02:03.123123", 2456, "0.22", "0.1234567890", "0.1234567890987654321"],
         [false, -128, -32768, -2147483648, -9999999999999, -1234.56, -1234567890.0987654321, null, "ww", [-0.1, -0.2, null, 0.3, 0.4], [null, 2], "1970-01-01 00:16:39.999999", null, "-0.22", "-0.1234567890", null],
         [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok()) << array_status.ToString();
-    ASSERT_TRUE(result_array->Equals(expected_array)) << result_array->ToString();
-    ASSERT_TRUE(expected_array->Equals(result_array)) << result_array->ToString();
+    ])"});
+    ASSERT_TRUE(array_status.ok()) << array_status.status().ToString();
+    ASSERT_TRUE(result_array->Equals(array_status.ValueOrDie())) << result_array->ToString();
+    ASSERT_TRUE(array_status.ValueOrDie()->Equals(result_array)) << result_array->ToString();
 }
 
 TEST_P(AvroFileBatchReaderTest, TestReadTimestampTypes) {
@@ -229,17 +224,15 @@ TEST_P(AvroFileBatchReaderTest, TestReadTimestampTypes) {
     // check array
     ASSERT_OK_AND_ASSIGN(auto result_array,
                          ::paimon::test::ReadResultCollector::CollectResult(batch_reader.get()));
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
     auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(read_fields), {R"([
+        arrow::json::ChunkedArrayFromJSONString(arrow::struct_(read_fields), {R"([
         ["1970-01-01T00:00:01","1970-01-01T00:00:00.001","1970-01-01T00:00:00.000001","1970-01-01T00:00:02","1970-01-01T00:00:00.002","1970-01-01T00:00:00.000002"],
         [null,"1970-01-01T00:00:00.003",null,null,"1970-01-01T00:00:00.004",null],
         ["1970-01-01T00:00:05",null,"1970-01-01T00:00:00.000005","1970-01-01T00:00:06",null,"1970-01-01T00:00:00.000006"]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok()) << array_status.ToString();
-    ASSERT_TRUE(result_array->Equals(expected_array)) << result_array->ToString();
-    ASSERT_TRUE(expected_array->Equals(result_array));
+    ])"});
+    ASSERT_TRUE(array_status.ok()) << array_status.status().ToString();
+    ASSERT_TRUE(result_array->Equals(array_status.ValueOrDie())) << result_array->ToString();
+    ASSERT_TRUE(array_status.ValueOrDie()->Equals(result_array)) << result_array->ToString();
 }
 
 TEST_F(AvroFileBatchReaderTest, TestReadMapTypes) {
@@ -275,9 +268,8 @@ TEST_F(AvroFileBatchReaderTest, TestReadMapTypes) {
     // check array
     ASSERT_OK_AND_ASSIGN(auto result_array,
                          ::paimon::test::ReadResultCollector::CollectResult(batch_reader.get()));
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
     auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(read_fields), {R"([
+        arrow::json::ChunkedArrayFromJSONString(arrow::struct_(read_fields), {R"([
         [
             [[1,10],[2,20]],
             [[1.1,10.1],[2.2,20.2]],
@@ -288,11 +280,11 @@ TEST_F(AvroFileBatchReaderTest, TestReadMapTypes) {
             [["outer_key",[[99.9,"nested_val"]]]],
             [[1000, [42, "row_str", "123.45"]]]
         ]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok()) << array_status.ToString();
-    ASSERT_TRUE(result_array->Equals(expected_array)) << result_array->ToString() << std::endl;
-    ASSERT_TRUE(expected_array->Equals(result_array));
+    ])"});
+    ASSERT_TRUE(array_status.ok()) << array_status.status().ToString();
+    ASSERT_TRUE(array_status.ok()) << array_status.status().ToString();
+    ASSERT_TRUE(result_array->Equals(array_status.ValueOrDie())) << result_array->ToString();
+    ASSERT_TRUE(array_status.ValueOrDie()->Equals(result_array)) << result_array->ToString();
 }
 
 TEST_F(AvroFileBatchReaderTest, TestSetReadSchemaRejectNestedSubFieldProjection) {
@@ -303,7 +295,7 @@ TEST_F(AvroFileBatchReaderTest, TestSetReadSchemaRejectNestedSubFieldProjection)
         arrow::field("f1", arrow::struct_({arrow::field("a", arrow::int32()),
                                            arrow::field("b", arrow::utf8())}))};
     auto write_type = arrow::struct_(write_fields);
-    auto write_array = arrow::ipc::internal::json::ArrayFromJSON(write_type, R"([
+    auto write_array = arrow::json::ArrayFromJSONString(write_type, R"([
             [1, [10, "x"]],
             [2, [20, "y"]]
         ])")
@@ -382,7 +374,7 @@ TEST_F(AvroFileBatchReaderTest, TestSetReadSchemaResetsReaderToFirstRow) {
         arrow::field("f1", arrow::int32()),
     };
     auto file_data_type = arrow::struct_(fields);
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(file_data_type, R"([
+    auto src_array = arrow::json::ArrayFromJSONString(file_data_type, R"([
             [1, 10],
             [2, 20],
             [3, 30],
@@ -412,7 +404,7 @@ TEST_F(AvroFileBatchReaderTest, TestSetReadSchemaResetsReaderToFirstRow) {
     ASSERT_EQ(0, reader->GetPreviousBatchFileRowId(0).value());
     auto projected_array =
         arrow::ImportArray(projected_batch.first.get(), projected_batch.second.get()).ValueOrDie();
-    auto expected_projected_array = arrow::ipc::internal::json::ArrayFromJSON(
+    auto expected_projected_array = arrow::json::ArrayFromJSONString(
                                         arrow::struct_({arrow::field("f1", arrow::int32())}),
                                         R"([
             [10],
@@ -444,7 +436,7 @@ TEST_F(AvroFileBatchReaderTest, TestGetNumberOfRows) {
     data_str.append("]");
 
     std::shared_ptr<arrow::Array> src_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, data_str).ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow_data_type, data_str).ValueOrDie();
     ASSERT_TRUE(src_array);
     WriteData(src_array, file_path, /*compression=*/"null");
 
@@ -494,7 +486,7 @@ TEST_F(AvroFileBatchReaderTest, TestReadBinaryWrittenFromBinaryAndLargeBinary) {
         auto write_field = arrow::field("f0", write_type);
         auto write_data_type = arrow::struct_({write_field});
         auto write_array =
-            arrow::ipc::internal::json::ArrayFromJSON(write_data_type, data_json).ValueOrDie();
+            arrow::json::ArrayFromJSONString(write_data_type, data_json).ValueOrDie();
 
         std::string file_path = PathUtil::JoinPath(dir_->Str(), file_name);
         WriteData(write_array, file_path, /*compression=*/"null");
@@ -523,7 +515,7 @@ TEST_F(AvroFileBatchReaderTest, TestReadBinaryWrittenFromBinaryAndLargeBinary) {
         ASSERT_OK_AND_ASSIGN(auto result_array, ::paimon::test::ReadResultCollector::CollectResult(
                                                     batch_reader.get()));
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(read_data_type, data_json).ValueOrDie();
+            arrow::json::ArrayFromJSONString(read_data_type, data_json).ValueOrDie();
         auto expected_chunked_array = std::make_shared<arrow::ChunkedArray>(expected_array);
         ASSERT_TRUE(result_array->Equals(expected_chunked_array));
     };

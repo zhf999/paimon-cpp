@@ -272,7 +272,7 @@ class DataEvolutionTableTest : public ::testing::Test,
         data_str.pop_back();
         data_str.append("]");
         return std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), data_str)
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields), data_str)
                 .ValueOrDie());
     }
 
@@ -294,7 +294,7 @@ TEST_P(DataEvolutionTableTest, TestBasic) {
     // write field: f0, f1, f2
     std::vector<std::string> write_cols0 = schema->field_names();
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "b"]
     ])")
             .ValueOrDie());
@@ -305,7 +305,7 @@ TEST_P(DataEvolutionTableTest, TestBasic) {
     // write field: f2
     std::vector<std::string> write_cols1 = {"f2"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["c"]
     ])")
             .ValueOrDie());
@@ -313,7 +313,7 @@ TEST_P(DataEvolutionTableTest, TestBasic) {
     SetFirstRowId(/*reset_first_row_id=*/0, commit_msgs);
     ASSERT_OK(Commit(table_path, commit_msgs));
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "c"]
     ])")
             .ValueOrDie());
@@ -322,7 +322,7 @@ TEST_P(DataEvolutionTableTest, TestBasic) {
     if (FileFormat() != "lance") {
         // read with row tracking
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({fields_[1], fields_[0], SpecialFields::SequenceNumber().field_,
                                 SpecialFields::RowId().field_, fields_[2]}),
                 R"([
@@ -350,7 +350,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleAppends) {
     // write field: f0, f1, f2
     std::vector<std::string> write_cols0 = schema->field_names();
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "b"],
         [1, "a", "b"],
         [1, "a", "b"],
@@ -369,7 +369,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleAppends) {
     // write field: f0, f1
     std::vector<std::string> write_cols1 = {"f0", "f1"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [1, "a"]
     ])")
             .ValueOrDie());
@@ -379,7 +379,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleAppends) {
     // write field: f2
     std::vector<std::string> write_cols2 = {"f2"};
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["b"]
     ])")
             .ValueOrDie());
@@ -394,7 +394,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleAppends) {
     // write field: f0, f1
     std::vector<std::string> write_cols3 = {"f0", "f1"};
     auto src_array3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [2, "c"]
     ])")
             .ValueOrDie());
@@ -405,7 +405,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleAppends) {
     // write field: f2
     std::vector<std::string> write_cols4 = {"f2"};
     auto src_array4 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["d"]
     ])")
             .ValueOrDie());
@@ -415,7 +415,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleAppends) {
 
     {
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "b"],
         [1, "a", "b"],
         [1, "a", "b"],
@@ -439,7 +439,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleAppends) {
                         /*row_ranges=*/row_ranges,
                         /*expected_first_row_ids=*/{0, 11, 11}, /*expected_row_counts=*/{10, 1, 1});
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "b"],
         [2, "c", "d"]
     ])")
@@ -451,7 +451,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleAppends) {
     if (FileFormat() != "lance") {
         // read with row tracking
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({
+            arrow::json::ArrayFromJSONString(arrow::struct_({
                                                           fields_[0],
                                                           fields_[1],
                                                           fields_[2],
@@ -487,7 +487,7 @@ TEST_P(DataEvolutionTableTest, TestOnlySomeColumns) {
     // write field: f0
     std::vector<std::string> write_cols0 = {"f0"};
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0]}), R"([
         [1]
     ])")
             .ValueOrDie());
@@ -497,7 +497,7 @@ TEST_P(DataEvolutionTableTest, TestOnlySomeColumns) {
     // write field: f1
     std::vector<std::string> write_cols1 = {"f1"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[1]}), R"([
         ["a"]
     ])")
             .ValueOrDie());
@@ -508,7 +508,7 @@ TEST_P(DataEvolutionTableTest, TestOnlySomeColumns) {
     // write field: f2
     std::vector<std::string> write_cols2 = {"f2"};
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["b"]
     ])")
             .ValueOrDie());
@@ -517,7 +517,7 @@ TEST_P(DataEvolutionTableTest, TestOnlySomeColumns) {
     ASSERT_OK(Commit(table_path, commit_msgs2));
 
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "b"]
     ])")
             .ValueOrDie());
@@ -526,7 +526,7 @@ TEST_P(DataEvolutionTableTest, TestOnlySomeColumns) {
     if (FileFormat() != "lance") {
         // read with row tracking
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({
+            arrow::json::ArrayFromJSONString(arrow::struct_({
                                                           fields_[0],
                                                           fields_[1],
                                                           fields_[2],
@@ -571,7 +571,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleSharedShreddingMapsPartialOverwrite) 
 
     std::vector<std::string> write_cols0 = {"id", "map1"};
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields[0], fields[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields[0], fields[1]}), R"([
         [1, [["a", 10], ["b", 20]]],
         [11, [["a", 11], ["b", 21]]]
     ])")
@@ -581,7 +581,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleSharedShreddingMapsPartialOverwrite) 
 
     std::vector<std::string> write_cols1 = {"id", "map2"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields[0], fields[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields[0], fields[2]}), R"([
         [2, [["c", 30], ["d", 40]]],
         [12, [["c", 31], ["d", 41]]]
     ])")
@@ -592,7 +592,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleSharedShreddingMapsPartialOverwrite) 
 
     std::vector<std::string> write_cols2 = {"map1"};
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields[1]}), R"([
         [[["b", 200], ["a", 100]]],
         [[["b", 201], ["a", 101]]]
     ])")
@@ -603,7 +603,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleSharedShreddingMapsPartialOverwrite) 
 
     // Read all columns and merge values from all partial files.
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         [2, [["a", 100], ["b", 200]], [["c", 30], ["d", 40]]],
         [12, [["a", 101], ["b", 201]], [["c", 31], ["d", 41]]]
     ])")
@@ -612,7 +612,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleSharedShreddingMapsPartialOverwrite) 
 
     // Read a subset of columns and recall only the requested shared-shredding MAP column.
     auto expected_column_pruned_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields[0], fields[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields[0], fields[2]}), R"([
         [2, [["c", 30], ["d", 40]]],
         [12, [["c", 31], ["d", 41]]]
     ])")
@@ -652,7 +652,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleSharedShreddingMapsPartialOverwrite) 
             fields[1],
             fields[2],
         });
-        auto expected = arrow::ipc::internal::json::ArrayFromJSON(expected_type, R"([
+        auto expected = arrow::json::ArrayFromJSONString(expected_type, R"([
             [0, 2, [["b", 200]], [["d", 40]]],
             [0, 12, [["b", 201]], [["d", 41]]]
         ])")
@@ -664,7 +664,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleSharedShreddingMapsPartialOverwrite) 
 
     // Read a subset of rows after merging values from all partial files.
     auto expected_partial_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         [12, [["a", 101], ["b", 201]], [["c", 31], ["d", 41]]]
     ])")
             .ValueOrDie());
@@ -674,7 +674,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleSharedShreddingMapsPartialOverwrite) 
 
     // Read row tracking fields and verify the latest partial overwrite sequence number.
     auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(
+        arrow::json::ArrayFromJSONString(
             arrow::struct_({fields[0], fields[1], fields[2], SpecialFields::RowId().field_,
                             SpecialFields::SequenceNumber().field_}),
             R"([
@@ -694,7 +694,7 @@ TEST_P(DataEvolutionTableTest, TestNullValues) {
     // write field: f0, f1
     std::vector<std::string> write_cols1 = {"f0", "f1"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [1, null]
     ])")
             .ValueOrDie());
@@ -704,7 +704,7 @@ TEST_P(DataEvolutionTableTest, TestNullValues) {
     // write field: f2
     std::vector<std::string> write_cols2 = {"f2"};
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["b"]
     ])")
             .ValueOrDie());
@@ -720,7 +720,7 @@ TEST_P(DataEvolutionTableTest, TestNullValues) {
     // write field: f2
     std::vector<std::string> write_cols3 = {"f2"};
     auto src_array3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["c"]
     ])")
             .ValueOrDie());
@@ -729,7 +729,7 @@ TEST_P(DataEvolutionTableTest, TestNullValues) {
     ASSERT_OK(Commit(table_path, commit_msgs3));
 
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, null, "c"]
     ])")
             .ValueOrDie());
@@ -738,7 +738,7 @@ TEST_P(DataEvolutionTableTest, TestNullValues) {
     if (FileFormat() != "lance") {
         // read with row tracking
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({
+            arrow::json::ArrayFromJSONString(arrow::struct_({
                                                           fields_[0],
                                                           fields_[1],
                                                           fields_[2],
@@ -764,7 +764,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleAppendsDifferentFirstRowIds) {
     // write field: f0, f1
     std::vector<std::string> write_cols1 = {"f0", "f1"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [1, "a"]
     ])")
             .ValueOrDie());
@@ -774,7 +774,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleAppendsDifferentFirstRowIds) {
     // write field: f2
     std::vector<std::string> write_cols2 = {"f2"};
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["b"]
     ])")
             .ValueOrDie());
@@ -790,7 +790,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleAppendsDifferentFirstRowIds) {
     // write field: f0, f1
     std::vector<std::string> write_cols3 = {"f0", "f1"};
     auto src_array3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [2, "c"]
     ])")
             .ValueOrDie());
@@ -802,7 +802,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleAppendsDifferentFirstRowIds) {
     // write field: f2
     std::vector<std::string> write_cols4 = {"f2"};
     auto src_array4 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["d"]
     ])")
             .ValueOrDie());
@@ -811,7 +811,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleAppendsDifferentFirstRowIds) {
     ASSERT_OK(Commit(table_path, commit_msgs4));
 
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "b"],
         [2, "c", "d"]
     ])")
@@ -821,7 +821,7 @@ TEST_P(DataEvolutionTableTest, TestMultipleAppendsDifferentFirstRowIds) {
     if (FileFormat() != "lance") {
         // read with row tracking
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({
+            arrow::json::ArrayFromJSONString(arrow::struct_({
                                                           fields_[0],
                                                           fields_[1],
                                                           fields_[2],
@@ -900,7 +900,7 @@ TEST_P(DataEvolutionTableTest, TestOnlyRowTrackingEnabled) {
     // write field: f0, f1, f2
     std::vector<std::string> write_cols0 = schema->field_names();
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "b"],
         [2, "c", "d"]
     ])")
@@ -912,7 +912,7 @@ TEST_P(DataEvolutionTableTest, TestOnlyRowTrackingEnabled) {
     if (FileFormat() != "lance") {
         // read with row tracking
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({fields_[1], fields_[0], SpecialFields::SequenceNumber().field_,
                                 SpecialFields::RowId().field_, fields_[2]}),
                 R"([
@@ -947,7 +947,7 @@ TEST_P(DataEvolutionTableTest, TestExternalPath) {
     // write field: f0, f1
     std::vector<std::string> write_cols0 = {"f0", "f1"};
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [1, "a"],
         [2, "c"]
     ])")
@@ -959,7 +959,7 @@ TEST_P(DataEvolutionTableTest, TestExternalPath) {
     // write field: f0, f2
     std::vector<std::string> write_cols1 = {"f0", "f2"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[2]}), R"([
         [10, "b"],
         [20, "d"]
     ])")
@@ -970,7 +970,7 @@ TEST_P(DataEvolutionTableTest, TestExternalPath) {
     ASSERT_OK(Commit(table_path, commit_msgs1));
 
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [10, "a", "b"],
         [20, "c", "d"]
     ])")
@@ -980,7 +980,7 @@ TEST_P(DataEvolutionTableTest, TestExternalPath) {
     if (FileFormat() != "lance") {
         // read with row tracking
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({fields_[1], fields_[0], fields_[2], SpecialFields::RowId().field_,
                                 SpecialFields::SequenceNumber().field_}),
                 R"([
@@ -1004,7 +1004,7 @@ TEST_P(DataEvolutionTableTest, TestWithPartitionSimple) {
     std::map<std::string, std::string> partition0 = {{"f1", "2024"}};
     std::vector<std::string> write_cols0 = schema->field_names();
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "2024", "b1"],
         [2, "2024", "b2"],
         [3, "2024", "b3"]
@@ -1018,7 +1018,7 @@ TEST_P(DataEvolutionTableTest, TestWithPartitionSimple) {
     // write field: f2 for f1=2024
     std::vector<std::string> write_cols1 = {"f2"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["c1"],
         ["c2"],
         ["c3"]
@@ -1032,7 +1032,7 @@ TEST_P(DataEvolutionTableTest, TestWithPartitionSimple) {
     std::map<std::string, std::string> partition2 = {{"f1", "2025"}};
     std::vector<std::string> write_cols2 = {"f1", "f2"};
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[1], fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[1], fields_[2]}), R"([
         ["2025", "d1"],
         ["2025", "d2"],
         ["2025", "d3"]
@@ -1044,7 +1044,7 @@ TEST_P(DataEvolutionTableTest, TestWithPartitionSimple) {
 
     // test read all fields
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "2024", "c1"],
         [2, "2024", "c2"],
         [3, "2024", "c3"],
@@ -1058,7 +1058,7 @@ TEST_P(DataEvolutionTableTest, TestWithPartitionSimple) {
     if (FileFormat() != "lance") {
         // test only read partition fields
         auto expected_array_only_partition = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[1]}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({fields_[1]}), R"([
         ["2024"],
         ["2024"],
         ["2024"],
@@ -1071,7 +1071,7 @@ TEST_P(DataEvolutionTableTest, TestWithPartitionSimple) {
 
         // read with row tracking
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({fields_[0], fields_[1], fields_[2], SpecialFields::RowId().field_,
                                 SpecialFields::SequenceNumber().field_}),
                 R"([
@@ -1089,7 +1089,7 @@ TEST_P(DataEvolutionTableTest, TestWithPartitionSimple) {
 
         // read only read partition fields and row tracking
         auto expected_partition_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({fields_[1], SpecialFields::RowId().field_,
                                 SpecialFields::SequenceNumber().field_}),
                 R"([
@@ -1117,7 +1117,7 @@ TEST_P(DataEvolutionTableTest, TestWithPartitionWithoutPartitionFieldsInFile) {
     std::map<std::string, std::string> partition0 = {{"f1", "2024"}};
     std::vector<std::string> write_cols0 = {"f0", "f2"};
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[2]}), R"([
         [1, "b1"],
         [2, "b2"],
         [3, "b3"]
@@ -1131,7 +1131,7 @@ TEST_P(DataEvolutionTableTest, TestWithPartitionWithoutPartitionFieldsInFile) {
     // write field: f2 for f1=2024
     std::vector<std::string> write_cols1 = {"f2"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["c1"],
         ["c2"],
         ["c3"]
@@ -1143,7 +1143,7 @@ TEST_P(DataEvolutionTableTest, TestWithPartitionWithoutPartitionFieldsInFile) {
 
     {
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "2024", "c1"],
         [2, "2024", "c2"],
         [3, "2024", "c3"]
@@ -1157,7 +1157,7 @@ TEST_P(DataEvolutionTableTest, TestWithPartitionWithoutPartitionFieldsInFile) {
         CheckScanResult(table_path, /*predicate=*/nullptr, /*row_ranges=*/row_ranges,
                         /*expected_first_row_ids=*/{0, 0}, /*expected_row_counts=*/{3, 3});
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [2, "2024", "c2"]
     ])")
                 .ValueOrDie());
@@ -1169,7 +1169,7 @@ TEST_P(DataEvolutionTableTest, TestWithPartitionWithoutPartitionFieldsInFile) {
     if (FileFormat() != "lance") {
         // read with row tracking
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({fields_[0], fields_[1], fields_[2], SpecialFields::RowId().field_,
                                 SpecialFields::SequenceNumber().field_}),
                 R"([
@@ -1202,7 +1202,7 @@ TEST_P(DataEvolutionTableTest, TestPartitionWithPredicate) {
     // write field: f0, f1 for partition f1 = "2024"
     std::vector<std::string> write_cols0 = {"f0", "f1"};
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [11, "2024"],
         [12, "2024"],
         [13, "2024"]
@@ -1215,7 +1215,7 @@ TEST_P(DataEvolutionTableTest, TestPartitionWithPredicate) {
     // write field: f2 for partition f1 = "2024"
     std::vector<std::string> write_cols1 = {"f2"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["a"],
         ["b"],
         ["c"]
@@ -1232,7 +1232,7 @@ TEST_P(DataEvolutionTableTest, TestPartitionWithPredicate) {
     // write field: f0, f1 for partition f1 = "2025"
     std::vector<std::string> write_cols3 = {"f0", "f1"};
     auto src_array3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [21, "2025"],
         [22, "2025"],
         [23, "2025"]
@@ -1249,7 +1249,7 @@ TEST_P(DataEvolutionTableTest, TestPartitionWithPredicate) {
         auto equal = PredicateBuilder::Equal(/*field_index=*/0, /*field_name=*/"f0", FieldType::INT,
                                              Literal(11));
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [11, "2024", "a"],
         [12, "2024", "b"],
         [13, "2024", "c"]
@@ -1263,7 +1263,7 @@ TEST_P(DataEvolutionTableTest, TestPartitionWithPredicate) {
             PredicateBuilder::Equal(/*field_index=*/1, /*field_name=*/"f1", FieldType::STRING,
                                     Literal(FieldType::STRING, "2024", 4));
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [11, "2024", "a"],
         [12, "2024", "b"],
         [13, "2024", "c"]
@@ -1289,7 +1289,7 @@ TEST_P(DataEvolutionTableTest, TestPartitionWithPredicate) {
                                     Literal(FieldType::STRING, "2024", 4));
 
         auto expected_row_tracking_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({fields_[0], fields_[1], fields_[2], SpecialFields::RowId().field_,
                                 SpecialFields::SequenceNumber().field_}),
                 R"([
@@ -1308,7 +1308,7 @@ TEST_P(DataEvolutionTableTest, TestPartitionWithPredicate) {
         CheckScanResult(table_path, /*predicate=*/nullptr, /*row_ranges=*/row_ranges,
                         /*expected_first_row_ids=*/{0, 0}, /*expected_row_counts=*/{3, 3});
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [12, "2024", "b"]
     ])")
                 .ValueOrDie());
@@ -1336,7 +1336,7 @@ TEST_P(DataEvolutionTableTest, TestPartitionWithPredicate) {
         CheckScanResult(table_path, /*predicate=*/equal, /*row_ranges=*/row_ranges,
                         /*expected_first_row_ids=*/{0, 0}, /*expected_row_counts=*/{3, 3});
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [12, "2024", "b"]
     ])")
                 .ValueOrDie());
@@ -1382,7 +1382,7 @@ TEST_P(DataEvolutionTableTest, TestAlterTable) {
 
     {
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
 ["1970-01-05T00:00", 0, 1, 100, "2024-11-26 06:38:56.001000001", "0.020", true, null, 0, 1],
 ["1969-11-18T00:00", 0, 1, 110, "2024-11-26 06:38:56.011000011", "11.120", true, null, 1, 1],
 ["1971-03-21T00:00", 0, 1, 120, "2024-11-26 06:38:56.021000021", "22.220", false, null, 2, 1],
@@ -1404,7 +1404,7 @@ TEST_P(DataEvolutionTableTest, TestAlterTable) {
         auto predicate = PredicateBuilder::GreaterThan(/*field_index=*/3, /*field_name=*/"f3",
                                                        FieldType::INT, Literal(200));
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
 ["1970-01-05T00:00", 0, 1, 100, "2024-11-26 06:38:56.001000001", "0.020", true, null, 0, 1],
 ["1969-11-18T00:00", 0, 1, 110, "2024-11-26 06:38:56.011000011", "11.120", true, null, 1, 1],
 ["1971-03-21T00:00", 0, 1, 120, "2024-11-26 06:38:56.021000021", "22.220", false, null, 2, 1],
@@ -1421,7 +1421,7 @@ TEST_P(DataEvolutionTableTest, TestAlterTable) {
         auto predicate =
             PredicateBuilder::IsNotNull(/*field_index=*/7, /*field_name=*/"f6", FieldType::INT);
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
 ["1970-01-05T00:00", 0, 1, 100, "2024-11-26 06:38:56.001000001", "0.020", true, null, 0, 1],
 ["1969-11-18T00:00", 0, 1, 110, "2024-11-26 06:38:56.011000011", "11.120", true, null, 1, 1],
 ["1971-03-21T00:00", 0, 1, 120, "2024-11-26 06:38:56.021000021", "22.220", false, null, 2, 1],
@@ -1443,7 +1443,7 @@ TEST_P(DataEvolutionTableTest, TestAlterTable) {
         CheckScanResult(table_path, /*predicate=*/nullptr, /*row_ranges=*/row_ranges,
                         /*expected_first_row_ids=*/{0, 0}, /*expected_row_counts=*/{5, 5});
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
 ["1969-11-18T00:00", 0, 1, 110, "2024-11-26 06:38:56.011000011", "11.120", true, null, 1, 1]
     ])")
                 .ValueOrDie());
@@ -1473,7 +1473,7 @@ TEST_P(DataEvolutionTableTest, TestReadCompactFiles) {
         DataField::ConvertDataFieldsToArrowStructType(read_fields);
 
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type, R"([
         ["Lily", 2, 12, 2.1, 0, 1],
         ["Alice", 3, 13, 3.1, 1, 1],
         ["Bob", 4, 14, 4.1, 2, 2],
@@ -1501,7 +1501,7 @@ TEST_P(DataEvolutionTableTest, TestReadTableWithDenseStats) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(read_fields);
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type, R"([
         ["Lily", 2, 102, 2.1, 0, 2],
         ["Alice", 4, 104, 3.1, 1, 2]
     ])")
@@ -1554,7 +1554,7 @@ TEST_P(DataEvolutionTableTest, TestReadTableWithDenseStats) {
         CheckScanResult(table_path, /*predicate=*/predicate, /*row_ranges=*/row_ranges,
                         /*expected_first_row_ids=*/{0, 0}, /*expected_row_counts=*/{2, 2});
         auto expected_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
         ["Lily", 2, 102, 2.1, 0, 2]
     ])")
                 .ValueOrDie());
@@ -1584,7 +1584,7 @@ TEST_P(DataEvolutionTableTest, TestScanAndReadWithIndex) {
         // first 4 records are two file with the same first row id with data evolution
         // last 2 rows only in one file
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
         ["Lily", 2, 102, 2.1],
         ["Alice", 4, 104, 3.1],
         ["Bob", 6, 106, 4.1],
@@ -1601,7 +1601,7 @@ TEST_P(DataEvolutionTableTest, TestScanAndReadWithIndex) {
         auto predicate = PredicateBuilder::Equal(/*field_index=*/2, /*field_name=*/"f2",
                                                  FieldType::INT, Literal(102));
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
         ["Lily", 2, 102, 2.1],
         ["Alice", 4, 104, 3.1],
         ["Bob", 6, 106, 4.1],
@@ -1616,7 +1616,7 @@ TEST_P(DataEvolutionTableTest, TestScanAndReadWithIndex) {
         auto predicate = PredicateBuilder::Equal(/*field_index=*/2, /*field_name=*/"f2",
                                                  FieldType::INT, Literal(103));
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
         ["Lily", 2, 102, 2.1],
         ["Alice", 4, 104, 3.1],
         ["Bob", 6, 106, 4.1],
@@ -1632,7 +1632,7 @@ TEST_P(DataEvolutionTableTest, TestScanAndReadWithIndex) {
         auto predicate = PredicateBuilder::Equal(/*field_index=*/2, /*field_name=*/"f2",
                                                  FieldType::INT, Literal(203));
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
         [null, null, 202, 6.1],
         [null, null, 204, 7.1]
     ])")
@@ -1647,7 +1647,7 @@ TEST_P(DataEvolutionTableTest, TestScanAndReadWithIndex) {
         auto predicate = PredicateBuilder::Equal(/*field_index=*/2, /*field_name=*/"f2",
                                                  FieldType::INT, Literal(202));
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
         [null, null, 202, 6.1],
         [null, null, 204, 7.1]
     ])")
@@ -1659,7 +1659,7 @@ TEST_P(DataEvolutionTableTest, TestScanAndReadWithIndex) {
         auto predicate =
             PredicateBuilder::IsNull(/*field_index=*/0, /*field_name=*/"f0", FieldType::STRING);
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
         [null, null, 202, 6.1],
         [null, null, 204, 7.1]
     ])")
@@ -1676,7 +1676,7 @@ TEST_P(DataEvolutionTableTest, TestScanAndReadWithIndex) {
         CheckScanResult(table_path, /*predicate=*/predicate, /*row_ranges=*/row_ranges,
                         /*expected_first_row_ids=*/{0, 0}, /*expected_row_counts=*/{4, 4});
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
         ["Lily", 2, 102, 2.1],
         ["Alice", 4, 104, 3.1],
         ["Bob", 6, 106, 4.1]
@@ -1695,7 +1695,7 @@ TEST_P(DataEvolutionTableTest, TestScanAndReadWithIndex) {
         CheckScanResult(table_path, /*predicate=*/predicate, /*row_ranges=*/row_ranges,
                         /*expected_first_row_ids=*/{4}, /*expected_row_counts=*/{2});
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type, R"([
         [null, null, 202, 6.1],
         [null, null, 204, 7.1]
     ])")
@@ -1718,7 +1718,7 @@ TEST_P(DataEvolutionTableTest, TestPredicate) {
     // write field: f0, f1, f2
     std::vector<std::string> write_cols0 = schema->field_names();
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "b"]
     ])")
             .ValueOrDie());
@@ -1729,7 +1729,7 @@ TEST_P(DataEvolutionTableTest, TestPredicate) {
     // write field: f2
     std::vector<std::string> write_cols1 = {"f2"};
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2]}), R"([
         ["c"]
     ])")
             .ValueOrDie());
@@ -1739,7 +1739,7 @@ TEST_P(DataEvolutionTableTest, TestPredicate) {
     {
         // test no predicate
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "c"]
     ])")
                 .ValueOrDie());
@@ -1751,7 +1751,7 @@ TEST_P(DataEvolutionTableTest, TestPredicate) {
             PredicateBuilder::NotEqual(/*field_index=*/2, /*field_name=*/"f2", FieldType::STRING,
                                        Literal(FieldType::STRING, "b", 1));
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "a", "c"]
     ])")
                 .ValueOrDie());
@@ -1794,7 +1794,7 @@ TEST_P(DataEvolutionTableTest, TestIOException) {
         // write field: f0, f1, f2
         std::vector<std::string> write_cols0 = schema->field_names();
         auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [10, "a", "b"],
         [20, "aa", "bb"],
         [23, "aaa", "bbb"]
@@ -1807,7 +1807,7 @@ TEST_P(DataEvolutionTableTest, TestIOException) {
         // write field: f2, f0
         std::vector<std::string> write_cols1 = {"f2", "f0"};
         auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[2], fields_[0]}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({fields_[2], fields_[0]}), R"([
         ["c", 100],
         ["cc", 200],
         ["ccc", 300]
@@ -1827,7 +1827,7 @@ TEST_P(DataEvolutionTableTest, TestIOException) {
     // scan and read with I/O exception
     bool read_run_complete = false;
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(
+        arrow::json::ArrayFromJSONString(
             arrow::struct_({fields_[1], fields_[0], SpecialFields::SequenceNumber().field_,
                             SpecialFields::RowId().field_, fields_[2]}),
             R"([
@@ -1863,7 +1863,7 @@ TEST_P(DataEvolutionTableTest, TestWithRowIds) {
     // turn 0: write field: f0, f1
     std::vector<std::string> write_cols = {"f0", "f1"};
     auto src_array0 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [0, "a"],
         [1, "b"]
     ])")
@@ -1874,7 +1874,7 @@ TEST_P(DataEvolutionTableTest, TestWithRowIds) {
 
     // turn 1: write field: f0, f1
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [2, "c"],
         [3, "d"]
     ])")
@@ -1885,7 +1885,7 @@ TEST_P(DataEvolutionTableTest, TestWithRowIds) {
 
     // turn 2: write field: f0, f1
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({fields_[0], fields_[1]}), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_({fields_[0], fields_[1]}), R"([
         [4, "e"],
         [5, "f"]
     ])")
@@ -1899,7 +1899,7 @@ TEST_P(DataEvolutionTableTest, TestWithRowIds) {
         CheckScanResult(table_path, /*predicate=*/nullptr, /*row_ranges=*/{},
                         /*expected_first_row_ids=*/{0, 2, 4}, /*expected_row_counts=*/{2, 2, 2});
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [0, "a", null],
         [1, "b", null],
         [2, "c", null],
@@ -1916,7 +1916,7 @@ TEST_P(DataEvolutionTableTest, TestWithRowIds) {
         CheckScanResult(table_path, /*predicate=*/nullptr, /*row_ranges=*/row_ranges,
                         /*expected_first_row_ids=*/{0}, /*expected_row_counts=*/{2});
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [0, "a", null],
         [1, "b", null]
     ])")
@@ -1930,7 +1930,7 @@ TEST_P(DataEvolutionTableTest, TestWithRowIds) {
         CheckScanResult(table_path, /*predicate=*/nullptr, /*row_ranges=*/row_ranges,
                         /*expected_first_row_ids=*/{4}, /*expected_row_counts=*/{2});
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [4, "e", null]
     ])")
                 .ValueOrDie());
@@ -1944,7 +1944,7 @@ TEST_P(DataEvolutionTableTest, TestWithRowIds) {
                         /*row_ranges=*/row_ranges,
                         /*expected_first_row_ids=*/{0, 4}, /*expected_row_counts=*/{2, 2});
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [1, "b", null],
         [4, "e", null]
     ])")
@@ -1959,7 +1959,7 @@ TEST_P(DataEvolutionTableTest, TestWithRowIds) {
         CheckScanResult(table_path, /*predicate=*/nullptr, /*row_ranges=*/row_ranges,
                         /*expected_first_row_ids=*/{0, 2, 4}, /*expected_row_counts=*/{2, 2, 2});
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [0, "a", null],
         [1, "b", null],
         [2, "c", null],
@@ -1978,7 +1978,7 @@ TEST_P(DataEvolutionTableTest, TestWithRowIds) {
                         /*row_ranges=*/row_ranges,
                         /*expected_first_row_ids=*/{2, 4}, /*expected_row_counts=*/{2, 2});
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [3, "d", null],
         [5, "f", null]
     ])")
@@ -1994,7 +1994,7 @@ TEST_P(DataEvolutionTableTest, TestWithRowIds) {
                         /*row_ranges=*/row_ranges,
                         /*expected_first_row_ids=*/{2, 4}, /*expected_row_counts=*/{2, 2});
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [3, "d", null],
         [5, "f", null]
     ])")
@@ -2039,7 +2039,7 @@ TEST_P(DataEvolutionTableTest, TestWithRowIds) {
         auto predicate = PredicateBuilder::Equal(/*field_index=*/0, /*field_name=*/"f0",
                                                  FieldType::INT, Literal(5));
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields_), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields_), R"([
         [5, "f", null]
     ])")
                 .ValueOrDie());
@@ -2057,7 +2057,7 @@ TEST_P(DataEvolutionTableTest, TestWithRowIds) {
                         /*expected_first_row_ids=*/{0, 4}, /*expected_row_counts=*/{2, 2});
 
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::struct_({fields_[1], fields_[0], SpecialFields::SequenceNumber().field_,
                                 SpecialFields::RowId().field_, fields_[2]}),
                 R"([

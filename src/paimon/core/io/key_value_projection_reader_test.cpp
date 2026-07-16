@@ -29,7 +29,7 @@
 #include "arrow/array/builder_dict.h"
 #include "arrow/array/builder_nested.h"
 #include "arrow/c/abi.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "arrow/util/checked_cast.h"
 #include "gtest/gtest.h"
 #include "paimon/common/types/data_field.h"
@@ -229,7 +229,7 @@ TEST_P(KeyValueProjectionReaderTest, TestProjectKeyValueMetadata) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
 
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(
+    auto src_array = arrow::json::ArrayFromJSONString(
                          src_type, R"([[0, 0, 1, 10], [1, 1, 2, 20], [2, 2, 3, 30]])")
                          .ValueOrDie();
     auto target_type = std::dynamic_pointer_cast<arrow::StructType>(
@@ -261,7 +261,7 @@ TEST_P(KeyValueProjectionReaderTest, TestSimple) {
         arrow::FieldVector({fields[2], fields[3], fields[4], fields[5], fields[6], fields[7]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 1, 10, 20, null, 30.01],
         [0, 0, 1, 3, 11, 21, 31.0, 31.01],
         [1, 0, 2, 2, 12, 22, 32.0, null],
@@ -273,15 +273,12 @@ TEST_P(KeyValueProjectionReaderTest, TestSimple) {
         arrow::struct_({fields[7], fields[6], fields[4], fields[2]}));
     ASSERT_TRUE(target_type);
     std::vector<int32_t> target_to_src_mapping = {5, 4, 2, 0};
-    std::shared_ptr<arrow::ChunkedArray> expected;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(target_type, {R"([
+    auto expected = arrow::json::ChunkedArrayFromJSONString(target_type, {R"([
         [30.01, null, 10, 1],
         [31.01, 31.0, 11, 1],
         [null, 32.0, 12, 2],
         [32.01, 33.0, 13, 2]
-    ])"},
-                                                                         &expected);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     std::shared_ptr<arrow::Schema> expected_sort_schema = arrow::schema(target_type->fields());
     CheckResult(src_array, target_type, target_to_src_mapping, key_schema, value_schema, expected,
                 expected_sort_schema, /*expected_reserve_count=*/5);
@@ -305,7 +302,7 @@ TEST_P(KeyValueProjectionReaderTest, TestTimestampType) {
         {fields[2], fields[3], fields[4], fields[5], fields[6], fields[7], fields[8], fields[9]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
 [0, 0, "1970-01-01 00:00:01", "1970-01-01 00:00:00.001", "1970-01-01 00:00:00.000001", "1970-01-01 00:00:00.000000001", "1970-01-01 00:00:02", "1970-01-01 00:00:00.002", "1970-01-01 00:00:00.000002", "1970-01-01 00:00:00.000000002"],
 [1, 0, "1970-01-01 00:00:03", "1970-01-01 00:00:00.003", null, "1970-01-01 00:00:00.000000003", "1970-01-01 00:00:04", "1970-01-01 00:00:00.004", "1970-01-01 00:00:00.000004", "1970-01-01 00:00:00.000000004"],
 [2, 0, "1970-01-01 00:00:05", "1970-01-01 00:00:00.005", null, null, "1970-01-01 00:00:06", null, "1970-01-01 00:00:00.000006", null]
@@ -316,14 +313,11 @@ TEST_P(KeyValueProjectionReaderTest, TestTimestampType) {
         {fields[2], fields[3], fields[4], fields[5], fields[6], fields[7], fields[8], fields[9]}));
     ASSERT_TRUE(target_type);
     std::vector<int32_t> target_to_src_mapping = {0, 1, 2, 3, 4, 5, 6, 7};
-    std::shared_ptr<arrow::ChunkedArray> expected;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(target_type, {R"([
+    auto expected = arrow::json::ChunkedArrayFromJSONString(target_type, {R"([
 ["1970-01-01 00:00:01", "1970-01-01 00:00:00.001", "1970-01-01 00:00:00.000001", "1970-01-01 00:00:00.000000001", "1970-01-01 00:00:02", "1970-01-01 00:00:00.002", "1970-01-01 00:00:00.000002", "1970-01-01 00:00:00.000000002"],
 ["1970-01-01 00:00:03", "1970-01-01 00:00:00.003", null, "1970-01-01 00:00:00.000000003", "1970-01-01 00:00:04", "1970-01-01 00:00:00.004", "1970-01-01 00:00:00.000004", "1970-01-01 00:00:00.000000004"],
 ["1970-01-01 00:00:05", "1970-01-01 00:00:00.005", null, null, "1970-01-01 00:00:06", null, "1970-01-01 00:00:00.000006", null]
-    ])"},
-                                                                         &expected);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     std::shared_ptr<arrow::Schema> expected_sort_schema =
         arrow::schema(arrow::FieldVector({fields[2]}));
     CheckResult(src_array, target_type, target_to_src_mapping, key_schema, value_schema, expected,
@@ -345,7 +339,7 @@ TEST_P(KeyValueProjectionReaderTest, TestComplexType) {
         arrow::FieldVector({fields[2], fields[3], fields[4], fields[5], fields[6], fields[7]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, false, "apple",  null,   20, "1970-01-01 00:00:00.000000500", "123.23"],
         [0, 0, false, "banana", "中国", 21, "2025-01-01 23:59:59.000000500", "213.59"],
         [1, 0, true, "apple",   "北京", 22, "2000-01-01 00:00:00.000000500", null],
@@ -357,15 +351,12 @@ TEST_P(KeyValueProjectionReaderTest, TestComplexType) {
         arrow::struct_({fields[2], fields[3], fields[4], fields[5], fields[6], fields[7]}));
     ASSERT_TRUE(target_type);
     std::vector<int32_t> target_to_src_mapping = {0, 1, 2, 3, 4, 5};
-    std::shared_ptr<arrow::ChunkedArray> expected;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(target_type, {R"([
+    auto expected = arrow::json::ChunkedArrayFromJSONString(target_type, {R"([
         [false, "apple",  null,   20, "1970-01-01 00:00:00.000000500", "123.23"],
         [false, "banana", "中国", 21, "2025-01-01 23:59:59.000000500", "213.59"],
         [true, "apple",   "北京", 22, "2000-01-01 00:00:00.000000500", null],
         [true, "papaya",  "你好",   23, "1970-01-02 00:00:00.000000500", "-12.21"]
-    ])"},
-                                                                         &expected);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     std::shared_ptr<arrow::Schema> expected_sort_schema = arrow::schema(target_type->fields());
     CheckResult(src_array, target_type, target_to_src_mapping, key_schema, value_schema, expected,
                 expected_sort_schema, /*expected_reserve_count=*/9);
@@ -386,7 +377,7 @@ TEST_P(KeyValueProjectionReaderTest, TestNestedType) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3], fields[4], fields[5]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, "apple",  [1, 2, 3],    [["apple", 3], ["banana", 4]],          [10, 10.1, false]],
         [0, 0, "banana", [4, 5],       [["cat", 5], ["dog", 6], ["mouse", 7]], [20, 20.1, true]],
         [0, 0, "cat",    [6],          [["elephant", 7], ["fox", 8]],          [null, 30.1, true]],
@@ -401,8 +392,7 @@ TEST_P(KeyValueProjectionReaderTest, TestNestedType) {
         arrow::struct_({fields[2], fields[3], fields[4], fields[5]}));
     ASSERT_TRUE(target_type);
     std::vector<int32_t> target_to_src_mapping = {0, 1, 2, 3};
-    std::shared_ptr<arrow::ChunkedArray> expected;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(target_type, {R"([
+    auto expected = arrow::json::ChunkedArrayFromJSONString(target_type, {R"([
         ["apple",   [1, 2, 3],    [["apple", 3], ["banana", 4]],          [10, 10.1, false]],
         ["banana",  [4, 5],       [["cat", 5], ["dog", 6], ["mouse", 7]], [20, 20.1, true]],
         ["cat",     [6],          [["elephant", 7], ["fox", 8]],          [null, 30.1, true]],
@@ -410,9 +400,7 @@ TEST_P(KeyValueProjectionReaderTest, TestNestedType) {
         ["eagle",   null,         [["horse", 10], ["Panda", 11]],         [50, 50.1, null]],
         ["fox",     [9],          null,                                   [60, 60.1, false]],
         ["giraffe", [10, 11, 12], [["rabbit", null], ["tiger", 13]],      null]
-    ])"},
-                                                                         &expected);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     std::shared_ptr<arrow::Schema> expected_sort_schema =
         arrow::schema(arrow::FieldVector({fields[2]}));
     CheckResult(src_array, target_type, target_to_src_mapping, key_schema, value_schema, expected,
@@ -437,7 +425,7 @@ TEST_P(KeyValueProjectionReaderTest, TestNestedType2) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3], fields[4], fields[5]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, "apple",  [null, [1, true], null], [[[1, true], true]], null],
         [0, 0, "banana", [[2, false], null], null, [[1, 2], true]],
         [0, 0, "cat",    [[2, false], [3, true], [4, null]], [[[1, true], true], [[5, false], true]], [[5, 6, 7], true]]
@@ -448,14 +436,11 @@ TEST_P(KeyValueProjectionReaderTest, TestNestedType2) {
         arrow::struct_({fields[4], fields[3], fields[5], fields[2]}));
     ASSERT_TRUE(target_type);
     std::vector<int32_t> target_to_src_mapping = {2, 1, 3, 0};
-    std::shared_ptr<arrow::ChunkedArray> expected;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(target_type, {R"([
+    auto expected = arrow::json::ChunkedArrayFromJSONString(target_type, {R"([
         [[[[1, true], true]], [null, [1, true], null], null, "apple"],
         [null, [[2, false], null], [[1, 2], true], "banana"],
         [[[[1, true], true], [[5, false], true]], [[2, false], [3, true], [4, null]], [[5, 6, 7], true], "cat"]
-    ])"},
-                                                                         &expected);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     std::shared_ptr<arrow::Schema> expected_sort_schema =
         arrow::schema(arrow::FieldVector({fields[2]}));
 
@@ -476,18 +461,18 @@ TEST_P(KeyValueProjectionReaderTest, TestDictionary) {
     std::shared_ptr<arrow::Schema> value_schema =
         arrow::schema(arrow::FieldVector({fields[2], fields[3]}));
     auto indices =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), "[1, 2, 0, 2, 0]").ValueOrDie();
-    auto dict = arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(), R"(["foo", "bar", "baz"])")
+        arrow::json::ArrayFromJSONString(arrow::int32(), "[1, 2, 0, 2, 0]").ValueOrDie();
+    auto dict = arrow::json::ArrayFromJSONString(arrow::utf8(), R"(["foo", "bar", "baz"])")
                     .ValueOrDie();
     std::shared_ptr<arrow::DictionaryArray> f0_array =
         std::make_shared<arrow::DictionaryArray>(dict_type, indices, dict);
-    auto key_array = arrow::ipc::internal::json::ArrayFromJSON(
+    auto key_array = arrow::json::ArrayFromJSONString(
                          arrow::utf8(), R"(["apple", "banana", "cat", "dog", "mouse"])")
                          .ValueOrDie();
-    auto seq_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::int64(), R"([1, 2, 3, 4, 5])")
+    auto seq_array = arrow::json::ArrayFromJSONString(arrow::int64(), R"([1, 2, 3, 4, 5])")
                          .ValueOrDie();
     auto kind_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int8(), R"([0, 0, 0, 0, 0])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int8(), R"([0, 0, 0, 0, 0])").ValueOrDie();
 
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array = std::make_shared<arrow::StructArray>(
@@ -498,7 +483,7 @@ TEST_P(KeyValueProjectionReaderTest, TestDictionary) {
     ASSERT_TRUE(target_type);
     std::vector<int32_t> target_to_src_mapping = {1, 0};
 
-    auto f0_string_array = arrow::ipc::internal::json::ArrayFromJSON(
+    auto f0_string_array = arrow::json::ArrayFromJSONString(
                                arrow::utf8(), R"(["bar", "baz", "foo", "baz", "foo"])")
                                .ValueOrDie();
 
@@ -526,7 +511,7 @@ TEST_P(KeyValueProjectionReaderTest, TestInvalidProducer) {
         arrow::FieldVector({fields[2], fields[3], fields[4], fields[5], fields[6], fields[7]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 1, 10, 20, null, 30.01],
         [0, 0, 1, 3, 11, 21, 31.0, 31.01],
         [1, 0, 2, 2, 12, 22, 32.0, null],

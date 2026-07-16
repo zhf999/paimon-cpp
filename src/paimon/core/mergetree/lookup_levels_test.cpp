@@ -22,7 +22,7 @@
 #include "arrow/api.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/catalog/catalog.h"
 #include "paimon/common/utils/fields_comparator.h"
@@ -67,7 +67,7 @@ class LookupLevelsTest : public testing::Test {
                                                    const CoreOptions& options,
                                                    const std::string& src_array_str) const {
         std::shared_ptr<arrow::Array> src_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(arrow_schema_->fields()),
+            arrow::json::ArrayFromJSONString(arrow::struct_(arrow_schema_->fields()),
                                                       src_array_str)
                 .ValueOrDie();
 

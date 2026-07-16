@@ -26,7 +26,7 @@
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
 #include "arrow/c/helpers.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/format/lance/lance_utils.h"
 #include "paimon/status.h"
@@ -120,7 +120,7 @@ TEST(LanceApiTest, TestInvalidCaseForWrite) {
         arrow::FieldVector mismatched_fields = {arrow::field("f1", arrow::int32())};
 
         auto mismatched_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(mismatched_fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(mismatched_fields), R"([
             [1], [2], [3] ])")
                 .ValueOrDie());
         ArrowArray mismatched_c_array;

@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "arrow/api.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/factories/io_hook.h"
 #include "paimon/common/io/cache/lru_cache.h"
@@ -257,7 +257,7 @@ TEST_P(ScanAndReadInteTest, TestWithAppendSnapshotIOException) {
 
         // check result
         auto expected = std::make_shared<arrow::ChunkedArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 0, 12.1],
 [0, "Emily", 10, 0, 13.1],
@@ -312,7 +312,7 @@ TEST_P(ScanAndReadInteTest, TestWithPkSnapshotIOException) {
 
         // check result
         auto expected = std::make_shared<arrow::ChunkedArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alice", 10, 1, 19.1],
 [0, "Alex", 10, 0, 16.1],
@@ -356,7 +356,7 @@ TEST_P(ScanAndReadInteTest, TestWithAppendSnapshot1) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 0, 12.1],
 [0, "Emily", 10, 0, 13.1],
@@ -397,7 +397,7 @@ TEST_P(ScanAndReadInteTest, TestWithAppendSnapshot3) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 0, 12.1],
 [0, "Emily", 10, 0, 13.1],
@@ -439,7 +439,7 @@ TEST_P(ScanAndReadInteTest, TestWithAppendSnapshot5) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 0, 12.1],
 [0, "Emily", 10, 0, 13.1],
@@ -478,7 +478,7 @@ TEST_P(ScanAndReadInteTest, TestWithAppendSnapshotWithStreamWithDefaultMode) {
 
     std::vector<std::optional<int64_t>> expected_snapshot_ids = {std::nullopt, 1, 2, 3, 4};
     auto expected_snapshot1 = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
             [0, "Alice", 10, 1, 11.1],
             [0, "Bob", 10, 0, 12.1],
             [0, "Emily", 10, 0, 13.1],
@@ -487,7 +487,7 @@ TEST_P(ScanAndReadInteTest, TestWithAppendSnapshotWithStreamWithDefaultMode) {
     ])")
             .ValueOrDie());
     auto expected_snapshot2 = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
             [0, "Emily", 10, 0, 15.1],
             [0, "Bob", 10, 0, 12.1],
             [0, "Alex", 10, 0, 16.1],
@@ -495,12 +495,12 @@ TEST_P(ScanAndReadInteTest, TestWithAppendSnapshotWithStreamWithDefaultMode) {
         ])")
             .ValueOrDie());
     auto expected_snapshot3 = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
              [0, "David", 10, 0, 17.1]
         ])")
             .ValueOrDie());
     auto expected_snapshot4 = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
              [0, "Lily", 10, 0, 17.1]
         ])")
             .ValueOrDie());
@@ -535,7 +535,7 @@ TEST_P(ScanAndReadInteTest, TestJavaPaimon1WithAppendSnapshot1) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
         [0, "Alice", 10, 1, 11.1],
         [0, "Bob", 10, 0, 12.1],
         [0, "Emily", 10, 0, 13.1],
@@ -589,15 +589,13 @@ TEST_P(ScanAndReadInteTest, TestJavaPaimon1WithAppendSnapshotOfNestedType) {
     ASSERT_OK_AND_ASSIGN(auto read_result, ReadResultCollector::CollectResult(batch_reader.get()));
 
     // check result
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
 [0, [[0, 0]], [0.1, 0.2], [true, 2], "1970-01-01 00:02:03.123123", 2456, "0.22"],
 [0, [[127, 32767], [-128, -32768]], [1.1, 1.2], [false, 2222], "1970-01-01 00:02:03.123123", 245, "0.12"],
 [0, [[1, 64], [2, 32]], [2.2, 3.2], [true, 2], "1970-01-01 00:00:00.0", 24, null]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(expected_array->Equals(read_result)) << read_result->ToString();
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(expected_array_result.ValueOrDie()->Equals(read_result)) << read_result->ToString();
 }
 
 // test pk with dv
@@ -623,7 +621,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithDvBatchScanSnapshot6) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alice", 10, 1, 19.1],
 [0, "Alex", 10, 0, 16.1],
@@ -688,7 +686,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithDvBatchScanSnapshot6WithPartitionAndBu
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alex", 10, 0, 16.1],
 [0, "Bob", 10, 0, 12.1],
 [0, "David", 10, 0, 17.1],
@@ -732,7 +730,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithDvBatchScanSnapshot6WithPredicate) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Lucy", 20, 1, 14.1],
 [0, "Paul", 20, 1, 18.1]
    ])")
@@ -785,7 +783,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithDvBatchScanSnapshot6WithLimit) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alice", 10, 1, 19.1],
 [0, "Alex", 10, 0, 16.1],
@@ -818,7 +816,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithDvStreamFromSnapshot4) {
     // from an compact snapshot
     std::vector<std::optional<int64_t>> expected_snapshot_ids = {4, 5, 6};
     auto expected_snapshot4_batch = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alice", 10, 1, 19.1],
 [0, "Alex", 10, 0, 16.1],
@@ -831,7 +829,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithDvStreamFromSnapshot4) {
             .ValueOrDie());
 
     auto expected_snapshot5_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [2, "Alex", 10, 0, 21.2],
 [0, "Marco", 10, 0, 21.1],
 [0, "Skye", 10, 0, 21.0]
@@ -839,7 +837,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithDvStreamFromSnapshot4) {
             .ValueOrDie());
 
     auto expected_snapshot6_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [3, "Alex", 10, 0, 31.2],
 [0, "Marco2", 10, 0, 31.1],
 [0, "Skye2", 10, 0, 31.0]
@@ -871,7 +869,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithDvStreamFromSnapshot5) {
     // (isStreaming=true)
     std::vector<std::optional<int64_t>> expected_snapshot_ids = {5, 6};
     auto expected_snapshot5_batch = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alice", 10, 1, 19.1],
 [0, "Alex", 10, 0, 21.2],
@@ -885,7 +883,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithDvStreamFromSnapshot5) {
     ])")
             .ValueOrDie());
     auto expected_snapshot6_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [3, "Alex", 10, 0, 31.2],
 [0, "Marco2", 10, 0, 31.1],
 [0, "Skye2", 10, 0, 31.0]
@@ -915,7 +913,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithDvStreamFromSnapshot6) {
     // list is contained
     std::vector<std::optional<int64_t>> expected_snapshot_ids = {6};
     auto expected_snapshot6_batch = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alice", 10, 1, 19.1],
 [0, "Bob", 10, 0, 12.1],
@@ -953,7 +951,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithDvStreamFromSnapshot1) {
     // from the first snapshot
     std::vector<std::optional<int64_t>> expected_snapshot_ids = {1, 3, 5, 6};
     auto expected_snapshot1_batch = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alex", 10, 0, 16.1],
@@ -967,20 +965,20 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithDvStreamFromSnapshot1) {
             .ValueOrDie());
 
     auto expected_snapshot3_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [2, "Alice", 10, 1, 19.1],
 [3, "Tony", 10, 0, 14.1]
     ])")
             .ValueOrDie());
     auto expected_snapshot5_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [2, "Alex", 10, 0, 21.2],
 [0, "Marco", 10, 0, 21.1],
 [0, "Skye", 10, 0, 21.0]
         ])")
             .ValueOrDie());
     auto expected_snapshot6_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [3, "Alex", 10, 0, 31.2],
 [0, "Marco2", 10, 0, 31.1],
 [0, "Skye2", 10, 0, 31.0]
@@ -1013,20 +1011,20 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithDvStreamFromSnapshot2) {
     // (snapshot 2 is compact snapshot, so skipped)
     std::vector<std::optional<int64_t>> expected_snapshot_ids = {std::nullopt, 3, 5, 6};
     auto expected_snapshot3_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [2, "Alice", 10, 1, 19.1],
 [3, "Tony", 10, 0, 14.1]
     ])")
             .ValueOrDie());
     auto expected_snapshot5_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [2, "Alex", 10, 0, 21.2],
 [0, "Marco", 10, 0, 21.1],
 [0, "Skye", 10, 0, 21.0]
         ])")
             .ValueOrDie());
     auto expected_snapshot6_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [3, "Alex", 10, 0, 31.2],
 [0, "Marco2", 10, 0, 31.1],
 [0, "Skye2", 10, 0, 31.0]
@@ -1072,13 +1070,13 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithNestedType) {
                         arrow::field("hr", arrow::int32()), arrow::field("col0", arrow::int32()),
                         arrow::field("col1", struct_inner_type), arrow::field("col2", map_type)});
 
-    auto array1 = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+    auto array1 = arrow::json::ArrayFromJSONString(data_type, R"([
         [0, 1005, "2025-04-14", 10, 50, ["str-5", 500, [5, null, 6]], [[5, 5], [105, 105]]],
         [0, 1006, "2025-04-14", 10, 60, ["str-6", 600, [6, null, 7]], [[6, 6], [106, 106]]]
     ])")
                       .ValueOrDie();
 
-    auto array2 = arrow::ipc::internal::json::ArrayFromJSON(data_type, R"([
+    auto array2 = arrow::json::ArrayFromJSONString(data_type, R"([
         [0, 1001, "2025-04-14", 10, 10, ["str-1", 100, [1, null, 2]], [[1, 1], [101, 101]]],
         [0, 1004, "2025-04-14", 10, 40, ["str-4", 400, [4, null, 5]], [[4, 4], [104, 104]]],
         [0, 1007, "2025-04-14", 10, 70, ["str-7", 700, [7, null, 8]], [[7, 7], [107, 107]]]
@@ -1112,7 +1110,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithMorBatchScanLatestSnapshot) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Bob", 10, 0, 12.1],
 [0, "David", 10, 0, 17.1],
 [0, "Emily", 10, 0, 13.1],
@@ -1159,7 +1157,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithMorBatchScanSnapshot2) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alice", 10, 1, 19.1],
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alex", 10, 0, 16.1],
@@ -1202,7 +1200,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithMorBatchScanSnapshot5WithPartitionAndB
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Bob", 10, 0, 12.1],
 [0, "David", 10, 0, 17.1],
 [0, "Emily", 10, 0, 13.1],
@@ -1259,7 +1257,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithMorBatchScanSnapshot5WithPredicate) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Bob", 10, 0, 12.1],
 [0, "David", 10, 0, 17.1],
 [0, "Emily", 10, 0, 13.1],
@@ -1324,7 +1322,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithDvWithInvalidAggregateBatchScanSnapsho
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alex", 10, 0, 16.1],
 [0, "Bob", 10, 0, 12.1],
 [0, "David", 10, 0, 17.1],
@@ -1394,7 +1392,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithAggregateBatchScanSnapshot3WithPredica
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alex", 10, 0, 16.1],
 [0, "Bob", 10, 0, 12.1],
 [0, "David", 10, 0, 17.1],
@@ -1437,7 +1435,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithPartialUpdateBatchScanSnapshot3WithPre
     ASSERT_TRUE(read_result);
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alex", 10, 0, 16.1],
 [0, "Bob", 10, 0, 12.1],
 [0, "David", 10, 0, 17.1],
@@ -1473,7 +1471,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithMorBatchScanSnapshot5WithLimit) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Bob", 10, 0, 12.1],
 [0, "David", 10, 0, 17.1],
 [0, "Emily", 10, 0, 13.1],
@@ -1510,7 +1508,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithMorStreamFromSnapshot4) {
     // first plan is snapshot4 (isStreaming=false), second plan is snapshot5
     std::vector<std::optional<int64_t>> expected_snapshot_ids = {4, 5};
     auto expected_snapshot4_batch = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alex", 10, 0, 21.2],
 [0, "Bob", 10, 0, 12.1],
 [0, "David", 10, 0, 17.1],
@@ -1524,7 +1522,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithMorStreamFromSnapshot4) {
     ])")
             .ValueOrDie());
     auto expected_snapshot5_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [3, "Alex", 10, 0, 31.2],
 [0, "Marco2", 10, 0, 31.1],
 [0, "Skye2", 10, 0, 31.0]
@@ -1554,7 +1552,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithMorStreamFromSnapshot1) {
 
     std::vector<std::optional<int64_t>> expected_snapshot_ids = {1, 2, 4, 5};
     auto expected_snapshot1_batch = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alex", 10, 0, 16.1],
@@ -1567,14 +1565,14 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithMorStreamFromSnapshot1) {
     ])")
             .ValueOrDie());
     auto expected_snapshot2_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [2, "Alice", 10, 1, 19.1],
 [3, "Tony", 10, 0, 14.1]
     ])")
             .ValueOrDie());
 
     auto expected_snapshot4_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [2, "Alex", 10, 0, 21.2],
 [0, "Marco", 10, 0, 21.1],
 [0, "Skye", 10, 0, 21.0]
@@ -1582,7 +1580,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithMorStreamFromSnapshot1) {
             .ValueOrDie());
 
     auto expected_snapshot5_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [3, "Alex", 10, 0, 31.2],
 [0, "Marco2", 10, 0, 31.1],
 [0, "Skye2", 10, 0, 31.0]
@@ -1615,14 +1613,14 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithMorStreamFromSnapshot2) {
 
     std::vector<std::optional<int64_t>> expected_snapshot_ids = {std::nullopt, 2, 4, 5};
     auto expected_snapshot2_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [2, "Alice", 10, 1, 19.1],
 [3, "Tony", 10, 0, 14.1]
     ])")
             .ValueOrDie());
 
     auto expected_snapshot4_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [2, "Alex", 10, 0, 21.2],
 [0, "Marco", 10, 0, 21.1],
 [0, "Skye", 10, 0, 21.0]
@@ -1630,7 +1628,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithMorStreamFromSnapshot2) {
             .ValueOrDie());
 
     auto expected_snapshot5_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [3, "Alex", 10, 0, 31.2],
 [0, "Marco2", 10, 0, 31.1],
 [0, "Skye2", 10, 0, 31.0]
@@ -1667,7 +1665,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithMorStreamFromSnapshot5WithPredicate) {
     std::vector<std::optional<int64_t>> expected_snapshot_ids = {std::nullopt, 5};
     // for streaming data split, return array with row_kind
     auto expected_snapshot5_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [3, "Alex", 10, 0, 31.2],
 [0, "Marco2", 10, 0, 31.1],
 [0, "Skye2", 10, 0, 31.0]
@@ -1703,7 +1701,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithFirstRowBatchScanSnapshot5) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alex", 10, 0, 16.1],
@@ -1740,7 +1738,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithFirstRowStreamFromSnapshot3) {
     // from a compact snapshot
     std::vector<std::optional<int64_t>> expected_snapshot_ids = {3, 4, 5};
     auto expected_snapshot3_batch = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alex", 10, 0, 16.1],
@@ -1754,7 +1752,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithFirstRowStreamFromSnapshot3) {
             .ValueOrDie());
 
     auto expected_snapshot4_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [2, "Alex", 10, 0, 21.2],
 [0, "Marco", 10, 0, 21.1],
 [0, "Skye", 10, 0, 21.0]
@@ -1762,7 +1760,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithFirstRowStreamFromSnapshot3) {
             .ValueOrDie());
     // delete record is ignored
     auto expected_snapshot5_stream = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Marco2", 10, 0, 31.1],
 [0, "Skye2", 10, 0, 31.0]
         ])")
@@ -1791,7 +1789,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWithFirstRowStreamFromSnapshot5) {
     // from an append snapshot, first plan is snapshot5 with merge, all level 0 data is merged
     std::vector<std::optional<int64_t>> expected_snapshot_ids = {5};
     auto expected_snapshot5_batch = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alex", 10, 0, 16.1],
@@ -1834,7 +1832,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKWith09VersionDvBatchScanLatestSnapshot) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alex", 10, 0, 16.1],
 [0, "Bob", 10, 0, 12.1],
 [0, "David", 10, 0, 17.1],
@@ -1878,7 +1876,7 @@ TEST_P(ScanAndReadInteTest, TestWithEmptyPartitionValue) {
         };
 
     auto expected_without_partition_filter = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "2025", 500, -1, 15.1],
 [0, "2024", 100, -2, 11.1],
 [0, "2024", 300, 1, 13.1],
@@ -1947,7 +1945,7 @@ TEST_P(ScanAndReadInteTest, TestWithMultipleEmptyPartitionValue) {
         };
 
     auto expected_without_partition_filter = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "", 200, -3, 12.1],
 [0, "", 50, 1, 14.1],
 [0, "2025", 500, -1, 15.1],
@@ -1999,7 +1997,7 @@ TEST_P(ScanAndReadInteTest, TestMemoryUse) {
 
         // check result
         auto expected = std::make_shared<arrow::ChunkedArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+            arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 0, 12.1],
 [0, "Emily", 10, 0, 13.1],
@@ -2100,7 +2098,7 @@ TEST_P(ScanAndReadInteTest, TestPkScanWithPostponeBucket) {
 
         std::vector<std::optional<int64_t>> expected_snapshot_ids = {std::nullopt, 1, 2};
         auto expected_snapshot1 = std::make_shared<arrow::ChunkedArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(field_with_row_kind), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(field_with_row_kind), R"([
             [0, "banana", 1, 3.5],
             [0, "dog", 1, 2000.5],
             [0, "lucy", 1, 10000.5],
@@ -2108,7 +2106,7 @@ TEST_P(ScanAndReadInteTest, TestPkScanWithPostponeBucket) {
     ])")
                 .ValueOrDie());
         auto expected_snapshot2 = std::make_shared<arrow::ChunkedArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(field_with_row_kind), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(field_with_row_kind), R"([
             [0, "Paul", 2, 12.1],
             [0, "Cathy", 2, 13.1],
             [0, "Emily", 2, 14.1],
@@ -2134,7 +2132,7 @@ TEST_P(ScanAndReadInteTest, TestPkScanWithPostponeBucket) {
 
         std::vector<std::optional<int64_t>> expected_snapshot_ids = {std::nullopt, 2};
         auto expected_snapshot2 = std::make_shared<arrow::ChunkedArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(field_with_row_kind), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(field_with_row_kind), R"([
             [0, "Paul", 2, 12.1],
             [0, "Cathy", 2, 13.1],
             [0, "Emily", 2, 14.1],
@@ -2161,7 +2159,7 @@ TEST_P(ScanAndReadInteTest, TestPkScanWithPostponeBucket) {
 
         std::vector<std::optional<int64_t>> expected_snapshot_ids = {1, 2};
         auto expected_snapshot1 = std::make_shared<arrow::ChunkedArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(field_with_row_kind), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(field_with_row_kind), R"([
             [0, "banana", 1, 3.5],
             [0, "dog", 1, 2000.5],
             [0, "lucy", 1, 10000.5],
@@ -2169,7 +2167,7 @@ TEST_P(ScanAndReadInteTest, TestPkScanWithPostponeBucket) {
     ])")
                 .ValueOrDie());
         auto expected_snapshot2 = std::make_shared<arrow::ChunkedArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(field_with_row_kind), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(field_with_row_kind), R"([
             [0, "Paul", 2, 12.1],
             [0, "Cathy", 2, 13.1],
             [0, "Emily", 2, 14.1],
@@ -2210,7 +2208,7 @@ TEST_P(ScanAndReadInteTest, TestScanWithPredicateAndReadWithUnorderedFieldForPar
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(
+        arrow::json::ArrayFromJSONString(
             arrow::struct_(
                 {arrow::field("_VALUE_KIND", arrow::int8()),
                  arrow::field("f10",
@@ -2265,7 +2263,7 @@ TEST_P(ScanAndReadInteTest, TestPkSchemaEvolutionScanWithRenamedPkPredicate) {
     ASSERT_OK_AND_ASSIGN(auto read_result, ReadResultCollector::CollectResult(batch_reader.get()));
 
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(
+        arrow::json::ArrayFromJSONString(
             arrow::struct_({arrow::field("_VALUE_KIND", arrow::int8()),
                             arrow::field("key1", arrow::int32()), arrow::field("k", arrow::utf8()),
                             arrow::field("key_2", arrow::int32()),
@@ -2331,7 +2329,7 @@ TEST_F(ScanAndReadInteTest, TestScanWithPredicateAndReadWithUnorderedFieldForLan
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(
+        arrow::json::ArrayFromJSONString(
             arrow::struct_({arrow::field("_VALUE_KIND", arrow::int8()), fields[2], fields[0]}),
             R"([[0, 3.5, "banana"],
                 [0, 2000.5, "dog"],
@@ -2371,7 +2369,7 @@ TEST_P(ScanAndReadInteTest, TestAppendTableWithMultipleFileFormat) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 0, 12.1],
 [0, "Emily", 10, 0, 13.1],
@@ -2408,7 +2406,7 @@ TEST_P(ScanAndReadInteTest, TestPkDvTableIndexInDataAndNoExternalPath) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alice", 10, 1, 19.1],
 [0, "Alex", 10, 0, 16.1],
@@ -2447,7 +2445,7 @@ TEST_P(ScanAndReadInteTest, TestPkDvTableIndexNotInDataAndNoExternalPath) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alice", 10, 1, 19.1],
 [0, "Alex", 10, 0, 16.1],
@@ -2490,7 +2488,7 @@ TEST_P(ScanAndReadInteTest, TestPkDvTableIndexNotInDataAndWithExternalPath) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alice", 10, 1, 19.1],
 [0, "Alex", 10, 0, 16.1],
@@ -2535,7 +2533,7 @@ TEST_P(ScanAndReadInteTest, TestScanAndReadWithDisableIndex) {
 
     // check result, when file-index.read.enabled = false, index will be ignored
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alice", 10, 1, 11.1],
 [0, "Bob", 10, 1, 12.1],
 [0, "Emily", 10, 0, 13.1],
@@ -2578,7 +2576,7 @@ TEST_P(ScanAndReadInteTest, TestPkDvTableIndexInDataAndWithExternalPath) {
 
     // check result
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
 [0, "Alice", 10, 1, 19.1],
 [0, "Alex", 10, 0, 16.1],
@@ -2628,7 +2626,7 @@ TEST_P(ScanAndReadInteTest, TestTimestampType) {
         arrow::field("ts_tz_nano", arrow::timestamp(arrow::TimeUnit::NANO, timezone)),
     };
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 [0, "1970-01-01 00:00:01", "1970-01-01 00:00:00.001", "1970-01-01 00:00:00.000001", "1970-01-01 00:00:00.000000001", "1970-01-01 00:00:02", "1970-01-01 00:00:00.002", "1970-01-01 00:00:00.000002", "1970-01-01 00:00:00.000000002"],
 [0, "1970-01-01 00:00:03", "1970-01-01 00:00:00.003", null, "1970-01-01 00:00:00.000000003", "1970-01-01 00:00:04", "1970-01-01 00:00:00.004", "1970-01-01 00:00:00.000004", "1970-01-01 00:00:00.000000004"],
 [0, "1970-01-01 00:00:05", "1970-01-01 00:00:00.005", null, null, "1970-01-01 00:00:06", null, "1970-01-01 00:00:00.000006", null]
@@ -2677,7 +2675,7 @@ TEST_P(ScanAndReadInteTest, TestCastTimestampType) {
         arrow::field("int_ts_tz_micro", arrow::timestamp(arrow::TimeUnit::MICRO, "Asia/Shanghai")),
     };
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 [0, -28799, 0, "1970-01-01 00:00:00.000001", "1969-12-31 16:00:00.000000001", 2, 0, "1970-01-01 08:00:00.000002", "1970-01-01 08:00:00.000000002", "1970-01-01 08:00:00", "1970-01-01 00:00:00.000000"],
 [0, -28797, 0, null, "1969-12-31 16:00:00.000000003", 4, 0, "1970-01-01 08:00:00.000004", "1970-01-01 08:00:00.000000004", "1970-01-01 08:00:01", "1970-01-01 00:00:01.000000"],
 [0, -28795, 0, null, null, 6, null, "1970-01-01 08:00:00.000006", null, "1970-01-01 07:59:59", "1969-12-31 23:59:59.000000"]
@@ -2736,7 +2734,7 @@ TEST_F(ScanAndReadInteTest, TestAvroWithAppendTable) {
                                      arrow::field("f1", arrow::list(arrow::int32()))})),
         };
         auto expected = std::make_shared<arrow::ChunkedArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), result_json)
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields), result_json)
                 .ValueOrDie());
         ASSERT_TRUE(expected);
         ASSERT_TRUE(expected->Equals(read_result))
@@ -2804,7 +2802,7 @@ TEST_F(ScanAndReadInteTest, TestAvroWithPkTable) {
                                      arrow::field("f1", arrow::list(arrow::int32()))})),
         };
         auto expected = std::make_shared<arrow::ChunkedArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(struct_(fields), result_json).ValueOrDie());
+            arrow::json::ArrayFromJSONString(struct_(fields), result_json).ValueOrDie());
         ASSERT_TRUE(expected);
         ASSERT_TRUE(expected->Equals(read_result)) << read_result->ToString();
     };
@@ -2866,7 +2864,7 @@ TEST_P(ScanAndReadInteTest, TestWithPKBucketSelectByPredicate) {
 
     // Only rows with f2=0 in partition f1=10 should be returned
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type_, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type_, R"([
 [0, "Alex", 10, 0, 16.1],
 [0, "Bob", 10, 0, 12.1],
 [0, "David", 10, 0, 17.1],

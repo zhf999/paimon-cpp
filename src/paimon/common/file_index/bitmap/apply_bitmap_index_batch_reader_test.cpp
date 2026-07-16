@@ -22,7 +22,7 @@
 
 #include "arrow/api.h"
 #include "arrow/array/array_nested.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "fmt/format.h"
 #include "fmt/ranges.h"
 #include "gtest/gtest.h"
@@ -73,7 +73,7 @@ class ApplyBitmapIndexBatchReaderTest : public ::testing::Test,
 
     void CheckResult(const std::string& data_str, const std::vector<int32_t>& bitmap_data,
                      const std::string& expected_str, int32_t specified_batch_size = -1) {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(int_type_, data_str).ValueOrDie();
+        auto f1 = arrow::json::ArrayFromJSONString(int_type_, data_str).ValueOrDie();
         std::shared_ptr<arrow::Array> data =
             arrow::StructArray::Make({f1}, target_type_->fields()).ValueOrDie();
 
@@ -106,7 +106,7 @@ class ApplyBitmapIndexBatchReaderTest : public ::testing::Test,
                 CheckResult(apply_bitmap_batch_reader.get(), nullptr);
             } else {
                 auto expected =
-                    arrow::ipc::internal::json::ArrayFromJSON(int_type_, expected_str).ValueOrDie();
+                    arrow::json::ArrayFromJSONString(int_type_, expected_str).ValueOrDie();
                 std::shared_ptr<arrow::Array> expect_array =
                     arrow::StructArray::Make({expected}, target_type_->fields()).ValueOrDie();
                 auto expected_chunk_array = std::make_shared<arrow::ChunkedArray>(expect_array);

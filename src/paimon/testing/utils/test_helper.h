@@ -24,6 +24,7 @@
 
 #include "arrow/c/bridge.h"
 #include "arrow/ipc/api.h"
+#include "arrow/json/from_string.h"
 #include "paimon/api.h"
 #include "paimon/catalog/catalog.h"
 #include "paimon/commit_context.h"
@@ -112,7 +113,7 @@ class TestHelper {
         const std::map<std::string, std::string>& partition_map, int32_t bucket,
         const std::vector<RecordBatch::RowKind>& row_kinds) {
         PAIMON_ASSIGN_OR_RAISE_FROM_ARROW(
-            auto array, arrow::ipc::internal::json::ArrayFromJSON(data_type, data_str));
+            auto array, arrow::json::ArrayFromJSONString(data_type, data_str));
         ::ArrowArray arrow_array;
         PAIMON_RETURN_NOT_OK_FROM_ARROW(arrow::ExportArray(*array, &arrow_array));
         RecordBatchBuilder batch_builder(&arrow_array);
@@ -252,7 +253,7 @@ class TestHelper {
                                ReadResultCollector::CollectResult(batch_reader.get()));
         PAIMON_ASSIGN_OR_RAISE_FROM_ARROW(
             auto expected_array,
-            arrow::ipc::internal::json::ArrayFromJSON(data_type, expected_result));
+            arrow::json::ArrayFromJSONString(data_type, expected_result));
         auto expected_chunk_array = std::make_shared<arrow::ChunkedArray>(expected_array);
 
         arrow::EqualOptions equal_options = arrow::EqualOptions::Defaults();

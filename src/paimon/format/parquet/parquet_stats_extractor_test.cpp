@@ -29,6 +29,7 @@
 #include "arrow/compare.h"
 #include "arrow/io/file.h"
 #include "arrow/ipc/api.h"
+#include "arrow/json/from_string.h"
 #include "arrow/memory_pool.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/binary_row.h"
@@ -76,7 +77,7 @@ class ParquetStatsExtractorTest : public ::testing::Test {
         ASSERT_OK_AND_ASSIGN(auto format_writer, ParquetFormatWriter::Create(
                                                      out, arrow_schema, builder.build(),
                                                      DEFAULT_PARQUET_WRITER_MAX_MEMORY_USE, pool));
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(struct_type, input).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(struct_type, input).ValueOrDie();
         auto arrow_array = std::make_unique<ArrowArray>();
         ASSERT_TRUE(arrow::ExportArray(*array, arrow_array.get()).ok());
         ASSERT_OK(format_writer->AddBatch(arrow_array.get()));
@@ -278,7 +279,7 @@ TEST_F(ParquetStatsExtractorTest, TestNullForAllType) {
         ParquetFormatWriter::Create(out, schema, builder.build(),
                                     DEFAULT_PARQUET_WRITER_MAX_MEMORY_USE, arrow_pool));
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
     ])")
             .ValueOrDie());

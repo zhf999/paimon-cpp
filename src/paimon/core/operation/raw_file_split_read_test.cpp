@@ -22,7 +22,7 @@
 #include <vector>
 
 #include "arrow/api.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/binary_row.h"
 #include "paimon/common/reader/concat_batch_reader.h"
@@ -191,17 +191,13 @@ TEST_F(RawFileSplitReadTest, TestCreateReader) {
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
       [0, "Bob", 10, 0, 12.1],
       [0, "Emily", 10, 0, 13.1],
       [0, "Tony", 10, 0, 14.1],
       [0, "Lucy", 20, 1, 14.1],
       [0, "Alice", 10, 1, 11.1]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckReadResult(read_schema, expected_array);
 }
 
@@ -217,17 +213,13 @@ TEST_F(RawFileSplitReadTest, TestCreateReaderWithReserveSequence) {
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
       [0, 12.1, 0, 10, "Bob"],
       [0, 13.1, 0, 10, "Emily"],
       [0, 14.1, 0, 10, "Tony"],
       [0, 14.1, 1, 20, "Lucy"],
       [0, 11.1, 1, 10, "Alice"]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckReadResult(read_schema, expected_array);
 }
 
@@ -241,17 +233,13 @@ TEST_F(RawFileSplitReadTest, TestCreateReaderWithPartitionKeys) {
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
       [0, 10, 0],
       [0, 10, 0],
       [0, 10, 0],
       [0, 20, 1],
       [0, 10, 1]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckReadResult(read_schema, expected_array);
 }
 
@@ -265,17 +253,13 @@ TEST_F(RawFileSplitReadTest, TestCreateReaderWithPartitionKeysWithReverseSequenc
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
       [0, 0, 10],
       [0, 0, 10],
       [0, 0, 10],
       [0, 1, 20],
       [0, 1, 10]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckReadResult(read_schema, expected_array);
 }
 
@@ -289,17 +273,13 @@ TEST_F(RawFileSplitReadTest, TestCreateReaderWithPartPartition) {
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
       [0, 0, 12.1],
       [0, 0, 13.1],
       [0, 0, 14.1],
       [0, 1, 14.1],
       [0, 1, 11.1]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckReadResult(read_schema, expected_array);
 }
 
@@ -313,17 +293,13 @@ TEST_F(RawFileSplitReadTest, TestCreateReaderWithPartPartitionWithReserveSequenc
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
       [0, 10, "Bob"],
       [0, 10, "Emily"],
       [0, 10, "Tony"],
       [0, 20, "Lucy"],
       [0, 10, "Alice"]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckReadResult(read_schema, expected_array);
 }
 
@@ -337,17 +313,13 @@ TEST_F(RawFileSplitReadTest, TestCreateReaderWithNonPartition) {
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
       [0, "Bob", 12.1],
       [0, "Emily", 13.1],
       [0, "Tony", 14.1],
       [0, "Lucy", 14.1],
       [0, "Alice", 11.1]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckReadResult(read_schema, expected_array);
 }
 
@@ -361,17 +333,13 @@ TEST_F(RawFileSplitReadTest, TestCreateReaderWithNonPartitionWithReserveSequence
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
       [0, 12.1, "Bob"],
       [0, 13.1, "Emily"],
       [0, 14.1, "Tony"],
       [0, 14.1, "Lucy"],
       [0, 11.1, "Alice"]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckReadResult(read_schema, expected_array);
 }
 

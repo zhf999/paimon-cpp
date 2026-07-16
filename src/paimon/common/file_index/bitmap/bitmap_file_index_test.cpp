@@ -20,7 +20,7 @@
 
 #include "arrow/api.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/utils/arrow/status_utils.h"
 #include "paimon/common/utils/date_time_utils.h"
@@ -84,7 +84,7 @@ TEST_F(BitmapIndexTest, TestStringType) {
     auto type = arrow::utf8();
     auto write_data = [&](int32_t version) -> Result<PAIMON_UNIQUE_PTR<Bytes>> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([
         ["a"],
         [null],
@@ -157,7 +157,7 @@ TEST_F(BitmapIndexTest, TestBooleanType) {
     auto type = arrow::boolean();
     auto write_data = [&](int32_t version) -> Result<PAIMON_UNIQUE_PTR<Bytes>> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([
         [true],
         [false],
@@ -218,7 +218,7 @@ TEST_F(BitmapIndexTest, TestTinyIntType) {
     auto type = arrow::int8();
     auto write_data = [&](int32_t version) -> Result<PAIMON_UNIQUE_PTR<Bytes>> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([
         [null],
         [null],
@@ -277,7 +277,7 @@ TEST_F(BitmapIndexTest, TestSmallIntType) {
     auto type = arrow::int16();
     auto write_data = [&](int32_t version) -> Result<PAIMON_UNIQUE_PTR<Bytes>> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([
         [null],
         [1],
@@ -344,7 +344,7 @@ TEST_F(BitmapIndexTest, TestBigIntType) {
     auto type = arrow::int64();
     auto write_data = [&](int32_t version) -> Result<PAIMON_UNIQUE_PTR<Bytes>> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([
         [1],
         [2],
@@ -406,7 +406,7 @@ TEST_F(BitmapIndexTest, TestDateType) {
     auto type = arrow::date32();
     auto write_data = [&](int32_t version) -> Result<PAIMON_UNIQUE_PTR<Bytes>> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([
         [20200220],
         [20200220],
@@ -471,7 +471,7 @@ TEST_F(BitmapIndexTest, TestIntType) {
     auto type = arrow::int32();
     auto write_data = [&](int32_t version) -> Result<PAIMON_UNIQUE_PTR<Bytes>> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([
         [0],
         [1],
@@ -536,7 +536,7 @@ TEST_F(BitmapIndexTest, TestTimestampType) {
     auto type = arrow::timestamp(arrow::TimeUnit::NANO);
     auto write_data = [&](int32_t version) -> Result<PAIMON_UNIQUE_PTR<Bytes>> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([
         [1745542802000123000],
         [1745542902000123000],
@@ -716,7 +716,7 @@ TEST_F(BitmapIndexTest, TestCompatibleWithJava) {
     auto type = arrow::utf8();
     auto write_data = [&](int32_t version) -> Result<PAIMON_UNIQUE_PTR<Bytes>> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([
         ["apple"],
         [null],
@@ -756,7 +756,7 @@ TEST_F(BitmapIndexTest, TestAllNull) {
     auto type = arrow::int32();
     auto write_data = [&](int32_t version) -> Result<PAIMON_UNIQUE_PTR<Bytes>> {
         auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({arrow::field("f0", type)}),
+            arrow::json::ArrayFromJSONString(arrow::struct_({arrow::field("f0", type)}),
                                                       R"([
         [null],
         [null],

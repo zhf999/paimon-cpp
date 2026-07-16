@@ -26,7 +26,7 @@
 #include "arrow/array/array_nested.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "orc/Int128.hh"
 #include "orc/MemoryPool.hh"
@@ -84,7 +84,7 @@ class OrcStatsExtractorTest : public ::testing::Test {
             OrcFormatWriter::Create(std::move(out_stream), *schema,
                                     {{"orc.timestamp-ltz.legacy.type", "false"}}, "zstd",
                                     /*batch_size=*/10, pool_));
-        auto src_array = arrow::ipc::internal::json::ArrayFromJSON(struct_type, input).ValueOrDie();
+        auto src_array = arrow::json::ArrayFromJSONString(struct_type, input).ValueOrDie();
         ArrowArray c_array;
         ASSERT_TRUE(arrow::ExportArray(*src_array, &c_array).ok());
         ASSERT_OK(format_writer->AddBatch(&c_array));
@@ -449,7 +449,7 @@ TEST_F(OrcStatsExtractorTest, TestNullForAllType) {
                                 {{"orc.timestamp-ltz.legacy.type", "false"}}, "zstd",
                                 /*batch_size=*/10, pool_));
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null]
     ])")
             .ValueOrDie());

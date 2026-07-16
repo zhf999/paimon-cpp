@@ -23,7 +23,7 @@
 #include "arrow/array/array_base.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/table/special_fields.h"
 #include "paimon/common/types/data_field.h"
@@ -91,18 +91,16 @@ TEST_F(CompleteRowKindBatchReaderTest, TestSimple) {
     auto reader = PrepareCompleteRowKindBatchReader(file_name, read_schema, /*batch_size=*/1);
     ASSERT_OK_AND_ASSIGN(auto result_array, ReadResultCollector::CollectResult(reader.get()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
     std::vector<DataField> result_fields = read_fields;
     result_fields.insert(result_fields.begin(), SpecialFields::ValueKind());
     auto result_schema = DataField::ConvertDataFieldsToArrowSchema(result_fields);
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(
         arrow::struct_(result_schema->fields()), {R"([
         [0, "Lucy", 20, 1, 14.1],
         [0, "Paul", 20, 1, 18.1]
-])"},
-        &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(expected_array->Equals(*result_array));
+])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(expected_array_result.ValueOrDie()->Equals(*result_array));
     reader->Close();
 }
 
@@ -120,15 +118,13 @@ TEST_F(CompleteRowKindBatchReaderTest, TestInnerReaderContainsRowKind) {
     auto reader = PrepareCompleteRowKindBatchReader(file_name, read_schema, /*batch_size=*/1);
     ASSERT_OK_AND_ASSIGN(auto result_array, ReadResultCollector::CollectResult(reader.get()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(
         arrow::struct_(read_schema->fields()), {R"([
         [0, "Lucy", 20, 1, 14.1],
         [0, "Paul", 20, 1, 18.1]
-])"},
-        &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(expected_array->Equals(*result_array));
+])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(expected_array_result.ValueOrDie()->Equals(*result_array));
     reader->Close();
 }
 
@@ -139,7 +135,7 @@ TEST_F(CompleteRowKindBatchReaderTest, TestNestedType) {
         arrow::field("f1", arrow::map(arrow::struct_({field("a", arrow::int64()),
                                                       field("b", arrow::boolean())}),
                                       arrow::boolean()))};
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+    auto src_array = arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         [[null, [1, true], null], [[[1, true], true]]],
         [[[2, false], null], null],
         [[[2, false], [3, true], [4, null]], [[[1, true], true], [[5, false], null]]],
@@ -150,19 +146,17 @@ TEST_F(CompleteRowKindBatchReaderTest, TestNestedType) {
     auto reader = PrepareCompleteRowKindBatchReader(src_array, /*batch_size=*/3);
     ASSERT_OK_AND_ASSIGN(auto result_array, ReadResultCollector::CollectResult(reader.get()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
     arrow::FieldVector read_fields = fields;
     read_fields.insert(read_fields.begin(), arrow::field("_VALUE_KIND", arrow::int8()));
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(read_fields), {R"([
+    auto expected_array_result =
+        arrow::json::ChunkedArrayFromJSONString(arrow::struct_(read_fields), {R"([
         [0, [null, [1, true], null], [[[1, true], true]]],
         [0, [[2, false], null], null],
         [0, [[2, false], [3, true], [4, null]], [[[1, true], true], [[5, false], null]]],
         [0, null, null]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(expected_array->Equals(*result_array));
+])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(expected_array_result.ValueOrDie()->Equals(*result_array));
     reader->Close();
 }
 

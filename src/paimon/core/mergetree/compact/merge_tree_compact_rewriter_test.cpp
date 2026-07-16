@@ -17,7 +17,7 @@
 #include "paimon/core/mergetree/compact/merge_tree_compact_rewriter.h"
 
 #include "arrow/api.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/factories/io_hook.h"
 #include "paimon/common/table/special_fields.h"
@@ -149,9 +149,7 @@ TEST_F(MergeTreeCompactRewriterTest, TestSimple) {
     auto arrow_schema = DataField::ConvertDataFieldsToArrowSchema(table_schema->Fields());
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [0,  0,  "Bob",  10,  0,  12.1],
 [4,  0,  "David",  10,  0,  17.1],
 [1,  0,  "Emily",  10,  0,  13.1],
@@ -159,9 +157,7 @@ TEST_F(MergeTreeCompactRewriterTest, TestSimple) {
 [10, 0,  "Marco2",  10,  0,  31.1],
 [6,  0,  "Skye",  10,  0,  21],
 [9,  0,  "Skye2",  10,  0,  31]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, fs, table_schema, expected_array);
 }
 
@@ -246,9 +242,7 @@ TEST_F(MergeTreeCompactRewriterTest, TestNotDropDelete) {
     auto arrow_schema = DataField::ConvertDataFieldsToArrowSchema(table_schema->Fields());
     auto type_with_special_fields =
         arrow::struct_(SpecialFields::CompleteSequenceAndValueKindField(arrow_schema)->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [11, 3,  "Alex",  10,  0,  31.2],
 [0,  0,  "Bob",  10,  0,  12.1],
 [4,  0,  "David",  10,  0,  17.1],
@@ -258,9 +252,7 @@ TEST_F(MergeTreeCompactRewriterTest, TestNotDropDelete) {
 [6,  0,  "Skye",  10,  0,  21],
 [9,  0,  "Skye2",  10,  0,  31],
 [5,  3,  "Tony",  10,  0, 14.1]
-])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
     CheckResult(compact_file_name, fs, table_schema, expected_array);
 }
 
@@ -306,9 +298,7 @@ TEST_F(MergeTreeCompactRewriterTest, TestIOException) {
         auto arrow_schema = DataField::ConvertDataFieldsToArrowSchema(table_schema->Fields());
         auto type_with_special_fields = arrow::struct_(
             SpecialFields::CompleteSequenceAndValueKindField(arrow_schema)->fields());
-        std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status =
-            arrow::ipc::internal::json::ChunkedArrayFromJSON(type_with_special_fields, {R"([
+        auto expected_array = arrow::json::ChunkedArrayFromJSONString(type_with_special_fields, {R"([
 [0,  0,  "Bob",  10,  0,  12.1],
 [4,  0,  "David",  10,  0,  17.1],
 [1,  0,  "Emily",  10,  0,  13.1],
@@ -316,9 +306,7 @@ TEST_F(MergeTreeCompactRewriterTest, TestIOException) {
 [10, 0,  "Marco2",  10,  0,  31.1],
 [6,  0,  "Skye",  10,  0,  21],
 [9,  0,  "Skye2",  10,  0,  31]
-])"},
-                                                             &expected_array);
-        ASSERT_TRUE(array_status.ok());
+])"}).ValueOrDie();
         CheckResult(compact_file_name, fs, table_schema, expected_array);
         run_complete = true;
         break;

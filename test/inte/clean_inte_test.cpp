@@ -35,7 +35,7 @@
 #include "arrow/array/builder_primitive.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "fmt/format.h"
 #include "gtest/gtest.h"
 #include "paimon/catalog/catalog.h"
@@ -109,7 +109,7 @@ class CleanInteTest : public testing::Test {
         const std::map<std::string, std::string>& partition_map, int32_t bucket,
         const std::vector<RecordBatch::RowKind>& row_kinds) const {
         PAIMON_ASSIGN_OR_RAISE_FROM_ARROW(
-            auto array, arrow::ipc::internal::json::ArrayFromJSON(data_type, data_str));
+            auto array, arrow::json::ArrayFromJSONString(data_type, data_str));
         ::ArrowArray arrow_array;
         PAIMON_RETURN_NOT_OK_FROM_ARROW(arrow::ExportArray(*array, &arrow_array));
         RecordBatchBuilder batch_builder(&arrow_array);

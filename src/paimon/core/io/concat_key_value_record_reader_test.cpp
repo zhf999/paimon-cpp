@@ -23,7 +23,7 @@
 #include "arrow/api.h"
 #include "arrow/array/array_base.h"
 #include "arrow/array/array_nested.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/core/key_value.h"
 #include "paimon/memory/memory_pool.h"
@@ -86,7 +86,7 @@ TEST_F(ConcatKeyValueRecordReaderTest, TestSimple) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3], fields[4], fields[5], fields[6]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 1, 10, 20, 30],
         [0, 0, 1, 2, 11, 21, 31],
         [1, 0, 2, 2, 12, 22, 32],
@@ -94,7 +94,7 @@ TEST_F(ConcatKeyValueRecordReaderTest, TestSimple) {
     ])")
             .ValueOrDie());
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 2, 4, 14, 24, 34],
         [0, 0, 3, 1, 15, 25, 35],
         [1, 0, 3, 2, 16, 26, 36],
@@ -132,7 +132,7 @@ TEST_F(ConcatKeyValueRecordReaderTest, TestSingleReaderInConcat) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3], fields[4], fields[5], fields[6]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 1, 10, 20, 30],
         [0, 0, 1, 2, 11, 21, 31],
         [1, 0, 2, 2, 12, 22, 32],
@@ -161,7 +161,7 @@ TEST_F(ConcatKeyValueRecordReaderTest, TestEmptyResult) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3], fields[4], fields[5], fields[6]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
     ])")
             .ValueOrDie());
 
@@ -182,12 +182,12 @@ TEST_F(ConcatKeyValueRecordReaderTest, TestEmptyReader) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3], fields[4], fields[5], fields[6]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
     ])")
             .ValueOrDie());
 
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 1, 10, 20, 30],
         [0, 0, 1, 2, 11, 21, 31],
         [1, 0, 2, 2, 12, 22, 32],

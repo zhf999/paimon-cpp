@@ -26,7 +26,7 @@
 
 #include "arrow/api.h"
 #include "arrow/array/array_nested.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/binary_array.h"
 #include "paimon/common/data/binary_row.h"
@@ -175,8 +175,8 @@ TEST_F(PredicateTest, TestInvalidFieldIndex) {
     ASSERT_TRUE(predicate);
 
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, 5, null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([4, 5, null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
     std::shared_ptr<arrow::Array> struct_array =
@@ -199,8 +199,8 @@ TEST_F(PredicateTest, TestEqual) {
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, 5, null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([4, 5, null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -238,8 +238,8 @@ TEST_F(PredicateTest, TestEqualNull) {
                                                   FieldType::BIGINT, Literal(FieldType::BIGINT));
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
-    auto f0 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2])").ValueOrDie();
+    auto f0 = arrow::json::ArrayFromJSONString(bigint_type, R"([4, null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -266,8 +266,8 @@ TEST_F(PredicateTest, TestNotEqual) {
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, 5, null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([4, 5, null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -302,8 +302,8 @@ TEST_F(PredicateTest, TestNotEqualNull) {
                                                      FieldType::BIGINT, Literal(FieldType::BIGINT));
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
-    auto f0 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2])").ValueOrDie();
+    auto f0 = arrow::json::ArrayFromJSONString(bigint_type, R"([4, null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -329,9 +329,9 @@ TEST_F(PredicateTest, TestGreater) {
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, 5, 6, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([4, 5, 6, null])").ValueOrDie();
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -365,8 +365,8 @@ TEST_F(PredicateTest, TestGreaterNull) {
         /*field_index=*/0, /*field_name=*/"f0", FieldType::BIGINT, Literal(FieldType::BIGINT));
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
-    auto f0 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2])").ValueOrDie();
+    auto f0 = arrow::json::ArrayFromJSONString(bigint_type, R"([4, null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -393,9 +393,9 @@ TEST_F(PredicateTest, TestGreaterOrEqual) {
     ASSERT_TRUE(predicate);
     ASSERT_EQ(predicate->GetFunction().ToString(), "GreaterOrEqual");
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, 5, 6, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([4, 5, 6, null])").ValueOrDie();
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -429,8 +429,8 @@ TEST_F(PredicateTest, TestGreaterOrEqualNull) {
         /*field_index=*/0, /*field_name=*/"f0", FieldType::BIGINT, Literal(FieldType::BIGINT));
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
-    auto f0 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2])").ValueOrDie();
+    auto f0 = arrow::json::ArrayFromJSONString(bigint_type, R"([4, null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -456,9 +456,9 @@ TEST_F(PredicateTest, TestLess) {
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, 5, 6, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([4, 5, 6, null])").ValueOrDie();
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -491,8 +491,8 @@ TEST_F(PredicateTest, TestLessNull) {
                                                      FieldType::BIGINT, Literal(FieldType::BIGINT));
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
-    auto f0 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2])").ValueOrDie();
+    auto f0 = arrow::json::ArrayFromJSONString(bigint_type, R"([4, null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -518,9 +518,9 @@ TEST_F(PredicateTest, TestLessOrEqual) {
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, 5, 6, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([4, 5, 6, null])").ValueOrDie();
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -553,8 +553,8 @@ TEST_F(PredicateTest, TestLessOrEqualNull) {
         /*field_index=*/0, /*field_name=*/"f0", FieldType::BIGINT, Literal(FieldType::BIGINT));
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
-    auto f0 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2])").ValueOrDie();
+    auto f0 = arrow::json::ArrayFromJSONString(bigint_type, R"([4, null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -579,8 +579,8 @@ TEST_F(PredicateTest, TestIsNull) {
         PredicateBuilder::IsNull(/*field_index=*/0, /*field_name=*/"f0", FieldType::BIGINT);
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
-    auto f0 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2])").ValueOrDie();
+    auto f0 = arrow::json::ArrayFromJSONString(bigint_type, R"([4, null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -608,8 +608,8 @@ TEST_F(PredicateTest, TestIsNotNull) {
         PredicateBuilder::IsNotNull(/*field_index=*/0, /*field_name=*/"f0", FieldType::BIGINT);
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
-    auto f0 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2])").ValueOrDie();
+    auto f0 = arrow::json::ArrayFromJSONString(bigint_type, R"([4, null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -639,9 +639,9 @@ TEST_F(PredicateTest, TestIn) {
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -675,9 +675,9 @@ TEST_F(PredicateTest, TestInNull) {
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -706,9 +706,9 @@ TEST_F(PredicateTest, TestNotIn) {
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -745,9 +745,9 @@ TEST_F(PredicateTest, TestNotInNull) {
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -786,9 +786,9 @@ TEST_F(PredicateTest, TestLargeIn) {
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -826,9 +826,9 @@ TEST_F(PredicateTest, TestLargeInNull) {
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -865,9 +865,9 @@ TEST_F(PredicateTest, TestLargeNotIn) {
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -908,9 +908,9 @@ TEST_F(PredicateTest, TestLargeNotInNull) {
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([1, 2, 3, null])").ValueOrDie();
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([3, 2, 1, 0])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -946,9 +946,9 @@ TEST_F(PredicateTest, TestAnd) {
                                                        FieldType::BIGINT, Literal(5l))}));
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, 3, 3, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([4, 3, 3, null])").ValueOrDie();
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([5, 6, 5, 5])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([5, 6, 5, 5])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -992,9 +992,9 @@ TEST_F(PredicateTest, TestOr) {
                                                       FieldType::BIGINT, Literal(5l))}));
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, 3, 3, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([4, 3, 3, null])").ValueOrDie();
     auto f1 =
-        arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([6, 6, 5, 5])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(bigint_type, R"([6, 6, 5, 5])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -1034,9 +1034,9 @@ TEST_F(PredicateTest, TestBetween) {
                                                     FieldType::BIGINT, Literal(3l), Literal(5l));
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
-    auto f0 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([3, 4, 5, 100, 1, null])")
+    auto f0 = arrow::json::ArrayFromJSONString(bigint_type, R"([3, 4, 5, 100, 1, null])")
                   .ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([1, 2, 3, 4, 5, 6])")
+    auto f1 = arrow::json::ArrayFromJSONString(bigint_type, R"([1, 2, 3, 4, 5, 6])")
                   .ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
@@ -1078,8 +1078,8 @@ TEST_F(PredicateTest, TestBetweenNull) {
                                   Literal(FieldType::BIGINT), Literal(5l));
     auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
-    auto f0 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([4, null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(bigint_type, R"([1, 2])").ValueOrDie();
+    auto f0 = arrow::json::ArrayFromJSONString(bigint_type, R"([4, null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(bigint_type, R"([1, 2])").ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", bigint_type), arrow::field("f1", bigint_type)});
 
@@ -1106,10 +1106,10 @@ TEST_F(PredicateTest, TestStartsWith) {
                                      Literal(FieldType::STRING, "aab", 3)));
     const auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
-    auto f0 = arrow::ipc::internal::json::ArrayFromJSON(string_type,
+    auto f0 = arrow::json::ArrayFromJSONString(string_type,
                                                         R"(["ccddee", "bbccdd", "aabbcc", null])")
                   .ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto f1 = arrow::json::ArrayFromJSONString(
                   string_type, R"(["gghhii", "ffgghh", "eeffgg", "ddeeff"])")
                   .ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
@@ -1154,8 +1154,8 @@ TEST_F(PredicateTest, TestStartsWithNull) {
     const auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(string_type, R"(["bbccdd", null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(string_type, R"(["ffgghh", "ccddee"])")
+        arrow::json::ArrayFromJSONString(string_type, R"(["bbccdd", null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(string_type, R"(["ffgghh", "ccddee"])")
                   .ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", string_type), arrow::field("f1", string_type)});
@@ -1185,10 +1185,10 @@ TEST_F(PredicateTest, TestEndsWith) {
                                    Literal(FieldType::STRING, "bcc", 3)));
     const auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
-    auto f0 = arrow::ipc::internal::json::ArrayFromJSON(string_type,
+    auto f0 = arrow::json::ArrayFromJSONString(string_type,
                                                         R"(["ccddee", "bbccdd", "aabbcc", null])")
                   .ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto f1 = arrow::json::ArrayFromJSONString(
                   string_type, R"(["gghhii", "ffgghh", "eeffgg", "ddeeff"])")
                   .ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
@@ -1225,8 +1225,8 @@ TEST_F(PredicateTest, TestEndsWithNull) {
     const auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(string_type, R"(["bbccdd", null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(string_type, R"(["ffgghh", "ccddee"])")
+        arrow::json::ArrayFromJSONString(string_type, R"(["bbccdd", null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(string_type, R"(["ffgghh", "ccddee"])")
                   .ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", string_type), arrow::field("f1", string_type)});
@@ -1256,10 +1256,10 @@ TEST_F(PredicateTest, TestContains) {
                                    Literal(FieldType::STRING, "cde", 3)));
     const auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
-    auto f0 = arrow::ipc::internal::json::ArrayFromJSON(string_type,
+    auto f0 = arrow::json::ArrayFromJSONString(string_type,
                                                         R"(["ghijkl", "defghi", "abcdef", null])")
                   .ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto f1 = arrow::json::ArrayFromJSONString(
                   string_type, R"(["stuvwx", "pqrstu", "mnopqr", "jklmno"])")
                   .ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
@@ -1296,8 +1296,8 @@ TEST_F(PredicateTest, TestContainsNull) {
     const auto predicate = std::dynamic_pointer_cast<PredicateFilter>(predicate_base);
     ASSERT_TRUE(predicate);
     auto f0 =
-        arrow::ipc::internal::json::ArrayFromJSON(string_type, R"(["defghi", null])").ValueOrDie();
-    auto f1 = arrow::ipc::internal::json::ArrayFromJSON(string_type, R"(["pqrstu", "jklmno"])")
+        arrow::json::ArrayFromJSONString(string_type, R"(["defghi", null])").ValueOrDie();
+    auto f1 = arrow::json::ArrayFromJSONString(string_type, R"(["pqrstu", "jklmno"])")
                   .ValueOrDie();
     std::shared_ptr<arrow::DataType> src_type =
         arrow::struct_({arrow::field("f0", string_type), arrow::field("f1", string_type)});

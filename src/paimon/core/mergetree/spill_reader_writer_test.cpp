@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "arrow/api.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/table/special_fields.h"
 #include "paimon/common/types/data_field.h"
@@ -58,7 +58,7 @@ class SpillReaderWriterTest : public ::testing::TestWithParam<std::string> {
 
     std::shared_ptr<arrow::RecordBatch> CreateRecordBatch(const std::string& json_data,
                                                           int64_t num_rows) const {
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(write_type_, json_data).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(write_type_, json_data).ValueOrDie();
         auto struct_array = std::dynamic_pointer_cast<arrow::StructArray>(array);
         return arrow::RecordBatch::Make(write_schema_, num_rows, struct_array->fields());
     }

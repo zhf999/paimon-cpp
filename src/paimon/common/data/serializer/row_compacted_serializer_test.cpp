@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/columnar/columnar_row.h"
 #include "paimon/common/utils/decimal_utils.h"
@@ -44,7 +44,7 @@ TEST(RowCompactedSerializerTest, TestSimple) {
         arrow::field("f14", arrow::decimal128(30, 5)),
     });
 
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(arrow_type,
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(arrow_type,
                                                                                     R"([
         [true, 0, 32767, 2147483647, 4294967295, 0.5, 1.141, "20250327", "banana", 2026, 1732603136054000054, 11, "55.02", "-123456789987654321.45678"],
         [null, null, null, null, null, null, null, null, null, null, null, null, null, null]
@@ -138,7 +138,7 @@ TEST(RowCompactedSerializerTest, TestNestedType) {
 
     auto arrow_type = arrow::struct_({inner_child1, inner_child2, inner_child3});
     // each inner child per row
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(arrow_type,
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(arrow_type,
                                                                                     R"([
 [[[100, [1, 2, 3, 4]], [101, [5, 6, 7]]],
 [[200, [[500, 1]]], [201, [[501, 2]]]],
@@ -220,7 +220,7 @@ TEST(RowCompactedSerializerTest, TestNestedTypeWithNull) {
 
     auto arrow_type = arrow::struct_({inner_child1, inner_child2, inner_child3});
     // each inner child per row
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(arrow_type,
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(arrow_type,
                                                                                     R"([
 [[[100, null], [101, [5, 6, null]]],
 [[200, [[500, null]]], [201, [[501, 2]]]],
@@ -312,7 +312,7 @@ TEST(RowCompactedSerializerTest, TestNestedNullWithTimestampAndDecimal) {
 
     auto arrow_type = arrow::struct_({inner_child1, inner_child2, inner_child3});
     // each inner child per row
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(arrow_type,
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(arrow_type,
                                                                                     R"([
 [[[100, ["5.12", "6.12"]]],
 [[200, ["-123456789987654321.45678", "23456789987654321.45678"]]],
@@ -419,7 +419,7 @@ TEST(RowCompactedSerializerTest, TestNestedNullWithTimestampAndDecimal2) {
     auto child2 = arrow::field("child2", arrow::utf8());
     auto arrow_type = arrow::struct_({child1, child2});
     // each inner child per row
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(arrow_type,
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(arrow_type,
                                                                                     R"([
 [[[[100, ["5.12", "6.12"]]],
 [[200, ["-123456789987654321.45678", "23456789987654321.45678"]]],
@@ -512,7 +512,7 @@ TEST(RowCompactedSerializerTest, TestListType) {
     auto inner_child1 = arrow::field("inner1", arrow::list(arrow::int32()));
     auto arrow_type = arrow::struct_({inner_child1});
     // each inner child per row
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(arrow_type,
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(arrow_type,
                                                                                     R"([
 [[5, 6, 7]],
 [[1, 2, 3]],
@@ -582,7 +582,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     // test various type
     {
         auto type = arrow::struct_({fields[0], fields[1], fields[2], fields[3]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [false, 0, 32767, 2147483647],
         [true, 0, 32767, 2147483647]
@@ -592,7 +592,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[0], fields[1], fields[2], fields[3]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [true, 0, 32767, 2147483647],
         [true, 1, 32767, 2147483647]
@@ -602,7 +602,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[0], fields[1], fields[2], fields[3]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [true, 0, 32766, 2147483647],
         [true, 0, 32767, 2147483647]
@@ -612,7 +612,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[0], fields[1], fields[2], fields[3]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [true, 0, 32767, 2147483646],
         [true, 0, 32767, 2147483647]
@@ -622,7 +622,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[4], fields[5], fields[6]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [4294967295, 10.1, 100.123],
         [4294967296, 10.1, 100.123]
@@ -632,7 +632,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[4], fields[5], fields[6]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [4294967295, 10.1, 100.123],
         [4294967295, 10.11, 100.123]
@@ -642,7 +642,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[4], fields[5], fields[6]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [4294967295, 10.1, 100.123],
         [4294967295, 10.1, 100.124]
@@ -652,7 +652,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[7], fields[8], fields[9]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         ["Alice", "这是一个中文", 10],
         ["Bob", "这是一个中文", 10]
@@ -662,7 +662,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[7], fields[8], fields[9]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         ["Alice", "这是一个中文", 10],
         ["Alice", "这是一个中文！", 10]
@@ -672,7 +672,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[7], fields[8], fields[9]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         ["Alice", "这是一个中文", 10],
         ["Alice", "这是一个中文", 20]
@@ -682,7 +682,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[10], fields[11], fields[12], fields[13]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [1732603136054000054, 11, "55.02", "-123456789987654321.45678"],
         [1732603136054000055, 11, "55.02", "-123456789987654321.45678"]
@@ -692,7 +692,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[10], fields[11], fields[12], fields[13]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [1732603136054000054, 11, "55.02", "-123456789987654321.45678"],
         [1732603136054000054, 12, "55.02", "-123456789987654321.45678"]
@@ -702,7 +702,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[10], fields[11], fields[12], fields[13]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [1732603136054000054, 11, "55.02", "-123456789987654321.45678"],
         [1732603136054000054, 11, "55.03", "-123456789987654321.45678"]
@@ -712,7 +712,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[10], fields[11], fields[12], fields[13]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [1732603136054000054, 11, "55.02", "-123456789987654321.45678"],
         [1732603136054000054, 11, "55.02", "-123456789987654321.45670"]
@@ -723,7 +723,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     // test null
     {
         auto type = arrow::struct_({fields[0], fields[1]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [false, null],
         [false, 20]
@@ -733,7 +733,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[0], fields[1]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [null, 20],
         [null, 21]
@@ -743,7 +743,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[0], fields[1]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [false, null],
         [true, 20]
@@ -753,7 +753,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[0], fields[1]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [null, 21],
         [false, 20]
@@ -763,7 +763,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[0], fields[1]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [null, null],
         [null, 20]
@@ -775,7 +775,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     // -infinity < -0.0 < +0.0 < +infinity < NaN == NaN
     {
         auto type = arrow::struct_({fields[5], fields[5], fields[5], fields[6], fields[6]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [-Inf, -0.0, 0.0, Inf, NaN],
         [-0.0, -0.0, 0.0, Inf, NaN]
@@ -785,7 +785,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[5], fields[5], fields[5], fields[6], fields[6]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [-Inf, -0.0, 0.0, Inf, NaN],
         [-Inf, 0.0, 0.0, Inf, NaN]
@@ -795,7 +795,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[5], fields[5], fields[5], fields[6], fields[6]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [-Inf, -0.0, 0.0, 0.0, NaN],
         [-Inf, -0.0, 0.0, Inf, NaN]
@@ -805,7 +805,7 @@ TEST(RowCompactedSerializerTest, TestSliceComparator) {
     }
     {
         auto type = arrow::struct_({fields[5], fields[5], fields[5], fields[6], fields[6]});
-        std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(type,
+        std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(type,
                                                                                         R"([
         [-Inf, -0.0, 0.0, Inf, Inf],
         [-Inf, -0.0, 0.0, Inf, NaN]

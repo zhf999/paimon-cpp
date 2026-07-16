@@ -19,6 +19,7 @@
 
 #include "arrow/api.h"
 #include "arrow/ipc/api.h"
+#include "arrow/json/from_string.h"
 #include "avro/Compiler.hh"
 #include "avro/Decoder.hh"
 #include "avro/Encoder.hh"
@@ -358,7 +359,7 @@ TEST_F(AvroDirectEncoderDecoderTest, TestDecodeWithProjection) {
         arrow::field("f17", arrow::decimal128(19, 19))};
 
     std::shared_ptr<arrow::Array> src_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         [true, 127, 32767, 2147483647, 9999999999999, 1234.56, 1234567890.0987654321, "aa", "qq", [[1.1,10.1],[2.2,20.2]], [["key1","val1"],["key2","val2"]], [0.1, 0.2], [true, null], "1970-01-01 00:02:03.123123", 2456, "0.22", "0.1234567890", "0.1234567890987654321"],
         [false, -128, -32768, -2147483648, -9999999999999, -1234.56, -1234567890.0987654321, null, "ww", [[1.11,10.11],[2.22,20.22]], [["key11","val11"],["key22","val22"]], [-0.1, -0.2, null, 0.3, 0.4], [null, 2], "1970-01-01 00:16:39.999999", null, "-0.22", "-0.1234567890", null],
         [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]

@@ -18,7 +18,7 @@
 
 #include "arrow/api.h"
 #include "arrow/array/array_nested.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/columnar/columnar_row.h"
 #include "paimon/common/data/internal_array.h"
@@ -48,7 +48,7 @@ TEST(CastedRowTest, TestSimpleWithNoCasting) {
     std::string data =
         R"([[true, 0, 32767, 2147483647, null, 4294967295, 0.5, 1.141592659, "2025-03-27", "banana"],
             [true, -2, -32768, -2147483648, null, -4294967298, 2.0, 3.141592657, "2025-03-26", "mouse"]])";
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow_type, data).ValueOrDie();
+    auto array = arrow::json::ArrayFromJSONString(arrow_type, data).ValueOrDie();
     ASSERT_TRUE(array);
     auto struct_array = std::dynamic_pointer_cast<arrow::StructArray>(array);
     ASSERT_TRUE(struct_array);
@@ -95,7 +95,7 @@ TEST(CastedRowTest, TestSimpleWithCasting) {
     std::string data =
         R"([[true, 0, 32767, 2147483647, null, 4294967295, 0.5, 1.141592659, "2025-03-27", "banana", 5],
             [true, -2, -32768, -2147483648, null, -4294967298, 2.0, 3.141592657, "2025-03-26", "mouse", 2]])";
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow_type, data).ValueOrDie();
+    auto array = arrow::json::ArrayFromJSONString(arrow_type, data).ValueOrDie();
     ASSERT_TRUE(array);
     auto struct_array = std::dynamic_pointer_cast<arrow::StructArray>(array);
     ASSERT_TRUE(struct_array);
@@ -155,7 +155,7 @@ TEST(CastedRowTest, TestNestedTypeWithCasting) {
         [[[11, 64], [12, 32]], [2.2, 3.2], [true, 2], "1970-01-01 00:00:00.123123", 24, "0.78"]
     ])";
 
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow_type, data).ValueOrDie();
+    auto array = arrow::json::ArrayFromJSONString(arrow_type, data).ValueOrDie();
     ASSERT_TRUE(array);
     auto struct_array = std::dynamic_pointer_cast<arrow::StructArray>(array);
     ASSERT_TRUE(struct_array);
@@ -205,7 +205,7 @@ TEST(CastedRowTest, TestInvalidCast) {
     auto arrow_type = DataField::ConvertDataFieldsToArrowStructType(fields);
 
     std::string data = R"([["apple", "noo", "2024-11-21T09:91:56.1"]])";
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow_type, data).ValueOrDie();
+    auto array = arrow::json::ArrayFromJSONString(arrow_type, data).ValueOrDie();
     ASSERT_TRUE(array);
     auto struct_array = std::dynamic_pointer_cast<arrow::StructArray>(array);
     ASSERT_TRUE(struct_array);

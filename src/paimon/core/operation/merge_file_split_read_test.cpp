@@ -27,7 +27,7 @@
 #include "arrow/api.h"
 #include "arrow/array/array_base.h"
 #include "arrow/c/abi.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/binary_row.h"
 #include "paimon/common/factories/io_hook.h"
@@ -647,9 +647,7 @@ TEST_P(MergeFileSplitReadTest, TestSimple) {
     auto fields_with_row_kind = read_schema->fields();
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
                         [0, 0, 0, "see",   110.0, false],
                         [0, 1, 0, "you",   11.1, false],
                         [0, 0, 0, "later", 12.2, true],
@@ -658,9 +656,7 @@ TEST_P(MergeFileSplitReadTest, TestSimple) {
                         [0, 200, 0, "number",140.4, false],
                         [0, 1, 1, "you",   130.0, false],
                         [0, 0, 0, "hi",    120.0, false]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckResult(result_array, expected_array, read_schema);
 }
 
@@ -695,9 +691,7 @@ TEST_P(MergeFileSplitReadTest, TestLookUp) {
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
                         [0, 0, 0, "see",   110.0, false],
                         [0, 1, 0, "you",   11.1, false],
                         [0, 0, 0, "later", 12.2, true],
@@ -706,9 +700,7 @@ TEST_P(MergeFileSplitReadTest, TestLookUp) {
                         [0, 200, 0, "number",140.4, false],
                         [0, 1, 1, "you",   130.0, false],
                         [0, 0, 0, "hi",    120.0, false]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckResult(result_array, expected_array, read_schema);
 }
 
@@ -766,15 +758,11 @@ TEST_P(MergeFileSplitReadTest, TestDeduplicateMergeEngineWithDeleteMsg) {
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
                         [0, 0, 1, 100.0, true, "new_apple"],
                         [0, 1, 1, 133.3, false, null],
                         [0, 2, 1, 144.4, true,  "orange"]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckResult(result_array, expected_array, read_schema);
 }
 
@@ -824,9 +812,7 @@ TEST_P(MergeFileSplitReadTest, TestReadWithPredicate) {
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
                         [0, 0, 0, "see",   "apple",    110.0, false],
                         [0, 1, 0, "you",   "banana",   11.1, false],
                         [0, 0, 0, "later", "car",      12.2, true],
@@ -834,9 +820,7 @@ TEST_P(MergeFileSplitReadTest, TestReadWithPredicate) {
                         [0, 2, 0, "!",     "driver",   13.3, false],
                         [0, 1, 1, "you",   "zoo",      130.0, false]
 
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckResult(result_array, expected_array, read_schema);
 }
 
@@ -875,9 +859,7 @@ TEST_P(MergeFileSplitReadTest, TestReadWithAlterTable) {
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
            [0, 0, 0, 0, 0, "apple", "see", 110, "false", null],
            [0, 0, 1, 0, 0, "banana", "you", 11, "false", null],
            [0, 1, 0, 0, 0, "car", "later", 12, "true", null],
@@ -886,9 +868,7 @@ TEST_P(MergeFileSplitReadTest, TestReadWithAlterTable) {
            [0, 100, 200, 0, 0, "max", "number", 140, "false", null],
            [0, 0, 1, 0, 1, "zoo", "you", 130, "false", null],
            [0, 0, 0, 1, 0, "elephant", "hi", 120, "false", null]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckResult(result_array, expected_array, read_schema);
 }
 
@@ -924,9 +904,7 @@ TEST_P(MergeFileSplitReadTest, TestReadWithAlterTableWithReverseSequence) {
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
            [0, null, 0, 0, 0, "see", 110],
            [0, null, 0, 1, 0, "you", 11],
            [0, null, 0, 0, 0, "later", 12],
@@ -935,9 +913,7 @@ TEST_P(MergeFileSplitReadTest, TestReadWithAlterTableWithReverseSequence) {
            [0, null, 0, 200, 0, "number", 140],
            [0, null, 1, 1, 0, "you", 130],
            [0, null, 0, 0, 1, "hi", 120]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckResult(result_array, expected_array, read_schema);
 }
 
@@ -972,9 +948,7 @@ TEST_P(MergeFileSplitReadTest, TestAggregateMergeEngine) {
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
                         [0, 0, 0, "see",   120.0, false],
                         [0, 1, 0, "you",   122.2, false],
                         [0, 0, 0, "later", 124.4, true],
@@ -983,9 +957,7 @@ TEST_P(MergeFileSplitReadTest, TestAggregateMergeEngine) {
                         [0, 200, 0, "number",140.4, false],
                         [0, 1, 1, "you",   160.0, false],
                         [0, 0, 0, "hi",    140.0, false]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckResult(result_array, expected_array, read_schema);
 }
 
@@ -1019,9 +991,7 @@ TEST_P(MergeFileSplitReadTest, TestPartialUpdateMergeEngine) {
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
                         [0, 0, 0, "see",     110.0],
                         [0, 1, 0, "you", 11.1],
                         [0, 0, 0, "later",   112.2],
@@ -1030,9 +1000,7 @@ TEST_P(MergeFileSplitReadTest, TestPartialUpdateMergeEngine) {
                         [0, 200, 0, "number",140.4],
                         [0, 1, 1, "you",     30.0],
                         [0, 0, 0, "hi",      120.0]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckResult(result_array, expected_array, read_schema);
 }
 
@@ -1064,15 +1032,12 @@ TEST_P(MergeFileSplitReadTest, TestPartialUpdateMergeEngineWithIgnoreDelete) {
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(
         arrow::struct_(fields_with_row_kind),
         {R"([ [0, 0, 1, 100.0, true, "new_apple"], [0, 1, 0, 2.0, false, null], [0, 1, 1, 133.3,
         false, "banana"], [0, 2, 1, 144.4, true, "orange"]
 
-    ])"},
-        &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckResult(result_array, expected_array, read_schema);
 }
 
@@ -1104,15 +1069,12 @@ TEST_P(MergeFileSplitReadTest, TestPartialUpdateMergeEngineWithRemoveRecordOnDel
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(
         arrow::struct_(fields_with_row_kind),
         {R"([ [0, 0, 1, 100.0, true, "new_apple"], [0, 1, 1, 133.3, false, "banana"], [0, 2, 1,
         144.4, true, "orange"]
 
-    ])"},
-        &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckResult(result_array, expected_array, read_schema);
 }
 
@@ -1169,9 +1131,7 @@ TEST_P(MergeFileSplitReadTest, TestIOException) {
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
                         [0, 0, 0, "see",   110.0, false],
                         [0, 1, 0, "you",   11.1, false],
                         [0, 0, 0, "later", 12.2, true],
@@ -1180,9 +1140,7 @@ TEST_P(MergeFileSplitReadTest, TestIOException) {
                         [0, 200, 0, "number",140.4, false],
                         [0, 1, 1, "you",   130.0, false],
                         [0, 0, 0, "hi",    120.0, false]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
 
     bool run_complete = false;
     auto io_hook = IOHook::GetInstance();
@@ -1265,16 +1223,12 @@ TEST_P(MergeFileSplitReadTest, Test09VersionWithoutInlineFieldId) {
     auto fields_with_row_kind = read_schema->fields();
     fields_with_row_kind.insert(fields_with_row_kind.begin(),
                                 arrow::field("_VALUE_KIND", arrow::int8()));
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow::struct_(fields_with_row_kind), {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(arrow::struct_(fields_with_row_kind), {R"([
                         [0, 16.1, 0, "Alex", 10],
                         [0, 12.1, 0, "Bob", 10],
                         [0, 17.1, 0, "David", 10],
                         [0, 13.1, 0, "Emily", 10]
-    ])"},
-                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"}).ValueOrDie();
     CheckResult(result_array, expected_array, read_schema);
 
     batch_reader->Close();

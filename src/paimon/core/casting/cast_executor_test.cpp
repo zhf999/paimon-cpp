@@ -28,7 +28,7 @@
 #include "arrow/api.h"
 #include "arrow/array/array_base.h"
 #include "arrow/array/builder_dict.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/utils/arrow/mem_utils.h"
 #include "paimon/common/utils/date_time_utils.h"
@@ -112,11 +112,11 @@ class CastExecutorTest : public ::testing::Test {
                           const std::string& src_array_str,
                           const std::string& target_array_str) const {
         auto src_array =
-            arrow::ipc::internal::json::ArrayFromJSON(src_type, src_array_str).ValueOrDie();
+            arrow::json::ArrayFromJSONString(src_type, src_array_str).ValueOrDie();
         ASSERT_OK_AND_ASSIGN(std::shared_ptr<arrow::Array> target_array,
                              cast_executor->Cast(src_array, target_type, arrow_pool_.get()));
         auto expected_array =
-            arrow::ipc::internal::json::ArrayFromJSON(target_type, target_array_str).ValueOrDie();
+            arrow::json::ArrayFromJSONString(target_type, target_array_str).ValueOrDie();
         ASSERT_TRUE(target_array->Equals(expected_array))
             << "target:" << target_array->ToString() << "expected:" << expected_array->ToString();
     }
@@ -125,7 +125,7 @@ class CastExecutorTest : public ::testing::Test {
                                         const std::shared_ptr<arrow::DataType>& target_type,
                                         const std::string& src_array_str) const {
         auto src_array =
-            arrow::ipc::internal::json::ArrayFromJSON(src_type, src_array_str).ValueOrDie();
+            arrow::json::ArrayFromJSONString(src_type, src_array_str).ValueOrDie();
         auto target_array = cast_executor->Cast(src_array, target_type, arrow_pool_.get());
         EXPECT_FALSE(target_array.ok()) << target_array.value()->ToString();
         return target_array.status().ToString();
@@ -1057,7 +1057,7 @@ TEST_F(CastExecutorTest, TestStringToNumericPrimitiveCastExecutorCastArray) {
         // Keyword in Java Paimon is "Infinity", "-Infinity", "NaN", while in C++ Paimon is "inf",
         // "-inf", "nan"
         auto src_array =
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::utf8(),
                 R"(["1.0","2.2","3.3","-10.01","0","3.4028235e+38","-3.4028235e+38", "inf", "-inf", "nan", null])")
                 .ValueOrDie();
@@ -1070,7 +1070,7 @@ TEST_F(CastExecutorTest, TestStringToNumericPrimitiveCastExecutorCastArray) {
     {
         // Keyword in Java Paimon is "Infinity", "-Infinity", "NaN", while in C++ Paimon is "inf",
         // "-inf", "nan"
-        auto src_array = arrow::ipc::internal::json::ArrayFromJSON(
+        auto src_array = arrow::json::ArrayFromJSONString(
                              arrow::utf8(),
                              R"(["1.0","2.2","3.3","-10.01","0","1.7976931348623157e+308",
                              "-1.7976931348623157e+308", "inf", "-inf", "nan", null])")
@@ -1193,7 +1193,7 @@ TEST_F(CastExecutorTest, TestNumericToStringCastExecutorCastArray) {
         std::vector<float> src_data = {1.0,       2.2,       3.3,      -10.01,    0,
                                        MAX_FLOAT, MIN_FLOAT, INFINITY, -INFINITY, NAN};
         auto src_array = MakeArrowArray<float, arrow::FloatBuilder>(arrow::float32(), src_data);
-        auto expected_array = arrow::ipc::internal::json::ArrayFromJSON(
+        auto expected_array = arrow::json::ArrayFromJSONString(
                                   arrow::utf8(),
                                   R"(["1","2.2","3.3","-10.01","0","3.4028235e+38",
                                              "-3.4028235e+38", "inf", "-inf", "nan", null])")
@@ -1205,7 +1205,7 @@ TEST_F(CastExecutorTest, TestNumericToStringCastExecutorCastArray) {
         std::vector<double> src_data = {1.0,        2.2,        3.3,      -10.01,    0,
                                         MAX_DOUBLE, MIN_DOUBLE, INFINITY, -INFINITY, NAN};
         auto src_array = MakeArrowArray<double, arrow::DoubleBuilder>(arrow::float64(), src_data);
-        auto expected_array = arrow::ipc::internal::json::ArrayFromJSON(
+        auto expected_array = arrow::json::ArrayFromJSONString(
                                   arrow::utf8(),
                                   R"(["1","2.2","3.3","-10.01","0","1.7976931348623157e+308",
                                              "-1.7976931348623157e+308", "inf", "-inf", "nan", null])")
@@ -1311,10 +1311,10 @@ TEST_F(CastExecutorTest, TestBinaryToBlobCastExecutorCastLiteral) {
 
 TEST_F(CastExecutorTest, TestBinaryToBlobCastExecutorCastArray) {
     auto cast_executor = std::make_shared<BinaryToBlobCastExecutor>();
-    auto src_array = arrow::ipc::internal::json::ArrayFromJSON(
+    auto src_array = arrow::json::ArrayFromJSONString(
                          arrow::binary(), R"(["foo", "bar", "", null, "blob"])")
                          .ValueOrDie();
-    auto expected_array = arrow::ipc::internal::json::ArrayFromJSON(
+    auto expected_array = arrow::json::ArrayFromJSONString(
                               arrow::large_binary(), R"(["foo", "bar", "", null, "blob"])")
                               .ValueOrDie();
 
@@ -1328,7 +1328,7 @@ TEST_F(CastExecutorTest, TestBinaryToBlobCastExecutorCastArray) {
 TEST_F(CastExecutorTest, TestBinaryToBlobCastExecutorCastArrayWithOffset) {
     auto cast_executor = std::make_shared<BinaryToBlobCastExecutor>();
     auto src_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::binary(), R"(["skip", "foo", "bar"])")
+        arrow::json::ArrayFromJSONString(arrow::binary(), R"(["skip", "foo", "bar"])")
             .ValueOrDie()
             ->Slice(1, 2);
 
@@ -1360,7 +1360,7 @@ TEST_F(CastExecutorTest, TestDateToTimestampCastExecutorCastArray) {
     {
         auto target_type = arrow::timestamp(arrow::TimeUnit::NANO);
         auto src_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::date32(), R"([1, 0, -1, 19516, null])")
+            arrow::json::ArrayFromJSONString(arrow::date32(), R"([1, 0, -1, 19516, null])")
                 .ValueOrDie();
         std::vector<int64_t> target_data = {
             1l * DateTimeUtils::MILLIS_PER_DAY * NANOS_PER_MILLIS,
@@ -1378,7 +1378,7 @@ TEST_F(CastExecutorTest, TestDateToTimestampCastExecutorCastArray) {
     {
         auto target_type = arrow::timestamp(arrow::TimeUnit::MILLI, "Asia/Shanghai");
         auto src_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::date32(), R"([1, 0, -1, 19516, null])")
+            arrow::json::ArrayFromJSONString(arrow::date32(), R"([1, 0, -1, 19516, null])")
                 .ValueOrDie();
         std::vector<int64_t> target_data = {
             57600000,
@@ -1406,7 +1406,7 @@ TEST_F(CastExecutorTest, TestNumericPrimitiveToTimestampCastExecutorCastArray) {
     {
         auto target_type = arrow::timestamp(arrow::TimeUnit::NANO);
         {
-            auto src_array = arrow::ipc::internal::json::ArrayFromJSON(
+            auto src_array = arrow::json::ArrayFromJSONString(
                                  arrow::int32(), R"([1, 0, -1, 2147483647, -2147483648, null])")
                                  .ValueOrDie();
             std::vector<int64_t> target_data = {
@@ -1420,7 +1420,7 @@ TEST_F(CastExecutorTest, TestNumericPrimitiveToTimestampCastExecutorCastArray) {
         }
         {
             auto src_array =
-                arrow::ipc::internal::json::ArrayFromJSON(arrow::int64(), R"([1, 0, -1, null])")
+                arrow::json::ArrayFromJSONString(arrow::int64(), R"([1, 0, -1, null])")
                     .ValueOrDie();
             std::vector<int64_t> target_data = {
                 28801l * NANOS_PER_SECOND, 28800l * NANOS_PER_SECOND, 28799l * NANOS_PER_SECOND};
@@ -1432,7 +1432,7 @@ TEST_F(CastExecutorTest, TestNumericPrimitiveToTimestampCastExecutorCastArray) {
     {
         auto target_type = arrow::timestamp(arrow::TimeUnit::NANO, "Asia/Shanghai");
         {
-            auto src_array = arrow::ipc::internal::json::ArrayFromJSON(
+            auto src_array = arrow::json::ArrayFromJSONString(
                                  arrow::int32(), R"([1, 0, -1, 2147483647, -2147483648, null])")
                                  .ValueOrDie();
             std::vector<int64_t> target_data = {
@@ -1446,7 +1446,7 @@ TEST_F(CastExecutorTest, TestNumericPrimitiveToTimestampCastExecutorCastArray) {
         }
         {
             auto src_array =
-                arrow::ipc::internal::json::ArrayFromJSON(arrow::int64(), R"([1, 0, -1, null])")
+                arrow::json::ArrayFromJSONString(arrow::int64(), R"([1, 0, -1, null])")
                     .ValueOrDie();
             std::vector<int64_t> target_data = {1l * NANOS_PER_SECOND, 0l * NANOS_PER_SECOND,
                                                 -1l * NANOS_PER_SECOND};
@@ -1534,7 +1534,7 @@ TEST_F(CastExecutorTest, TestTimestampToStringCastExecutorCastArray) {
             MakeArrowArray<int64_t, arrow::TimestampBuilder>(src_type, src_data);
 
         auto target_array =
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::utf8(),
                 R"(["1970-01-02 00:00:00.000000001", "1970-01-01 00:00:00.000000500",
                     "1969-12-31 00:00:00.000000500", "2023-06-08 00:00:00.000000000",
@@ -1548,7 +1548,7 @@ TEST_F(CastExecutorTest, TestTimestampToStringCastExecutorCastArray) {
         std::shared_ptr<arrow::Array> src_array =
             MakeArrowArray<int64_t, arrow::TimestampBuilder>(src_type, src_data);
 
-        auto target_array = arrow::ipc::internal::json::ArrayFromJSON(
+        auto target_array = arrow::json::ArrayFromJSONString(
                                 arrow::utf8(),
                                 R"(["1970-01-01 00:00:00.000000", "1969-12-31 23:59:59.999999",
                     "1970-01-01 00:00:00.000001", null])")
@@ -1561,7 +1561,7 @@ TEST_F(CastExecutorTest, TestTimestampToStringCastExecutorCastArray) {
         std::shared_ptr<arrow::Array> src_array =
             MakeArrowArray<int64_t, arrow::TimestampBuilder>(src_type, src_data);
 
-        auto target_array = arrow::ipc::internal::json::ArrayFromJSON(
+        auto target_array = arrow::json::ArrayFromJSONString(
                                 arrow::utf8(),
                                 R"(["1970-01-01 00:00:00.000", "1969-12-31 23:59:59.999",
                     "1970-01-01 00:00:00.001", null])")
@@ -1574,7 +1574,7 @@ TEST_F(CastExecutorTest, TestTimestampToStringCastExecutorCastArray) {
         std::shared_ptr<arrow::Array> src_array =
             MakeArrowArray<int64_t, arrow::TimestampBuilder>(src_type, src_data);
 
-        auto target_array = arrow::ipc::internal::json::ArrayFromJSON(
+        auto target_array = arrow::json::ArrayFromJSONString(
                                 arrow::utf8(),
                                 R"(["1970-01-01 00:00:00", "1969-12-31 23:59:59",
                     "1970-01-01 00:00:01", null])")
@@ -1587,7 +1587,7 @@ TEST_F(CastExecutorTest, TestTimestampToStringCastExecutorCastArray) {
         std::shared_ptr<arrow::Array> src_array =
             MakeArrowArray<int64_t, arrow::TimestampBuilder>(src_type, src_data);
 
-        auto target_array = arrow::ipc::internal::json::ArrayFromJSON(
+        auto target_array = arrow::json::ArrayFromJSONString(
                                 arrow::utf8(),
                                 R"(["1970-01-01 08:00:00", "1970-01-01 07:59:59",
                     "1970-01-01 08:00:01", null])")
@@ -1601,7 +1601,7 @@ TEST_F(CastExecutorTest, TestTimestampToStringCastExecutorCastArray) {
             MakeArrowArray<int64_t, arrow::TimestampBuilder>(src_type, src_data);
 
         auto target_array =
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::utf8(),
                 R"(["1970-01-01 08:00:00.000000000", "1970-01-01 07:59:59.999999999",
                     "1970-01-01 08:00:00.000000001", null])")
@@ -1625,7 +1625,7 @@ TEST_F(CastExecutorTest, TestTimestampToDateCastExecutorCastArray) {
         std::shared_ptr<arrow::Array> src_array =
             MakeArrowArray<int64_t, arrow::TimestampBuilder>(src_type, src_data);
 
-        auto target_array = arrow::ipc::internal::json::ArrayFromJSON(
+        auto target_array = arrow::json::ArrayFromJSONString(
                                 arrow::date32(), R"([1, 0, -1, 19516, -106752, 106751, null])")
                                 .ValueOrDie();
         CheckArrayResult(cast_executor, arrow::date32(), src_array, target_array);
@@ -1641,7 +1641,7 @@ TEST_F(CastExecutorTest, TestTimestampToDateCastExecutorCastArray) {
             MakeArrowArray<int64_t, arrow::TimestampBuilder>(src_type, src_data);
 
         auto target_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::date32(), R"([1, 1, -1, null])")
+            arrow::json::ArrayFromJSONString(arrow::date32(), R"([1, 1, -1, null])")
                 .ValueOrDie();
         CheckArrayResult(cast_executor, arrow::date32(), src_array, target_array);
     }
@@ -1658,13 +1658,13 @@ TEST_F(CastExecutorTest, TestTimestampToNumericPrimitiveCastExecutorCastArray) {
         std::shared_ptr<arrow::Array> src_array =
             MakeArrowArray<int64_t, arrow::TimestampBuilder>(src_type, src_data);
         {
-            auto target_array = arrow::ipc::internal::json::ArrayFromJSON(
+            auto target_array = arrow::json::ArrayFromJSONString(
                                     arrow::int32(), R"([57600, -28800, -115200, 1686153600, null])")
                                     .ValueOrDie();
             CheckArrayResult(cast_executor, arrow::int32(), src_array, target_array);
         }
         {
-            auto target_array = arrow::ipc::internal::json::ArrayFromJSON(
+            auto target_array = arrow::json::ArrayFromJSONString(
                                     arrow::int64(), R"([57600, -28800, -115200, 1686153600, null])")
                                     .ValueOrDie();
             CheckArrayResult(cast_executor, arrow::int64(), src_array, target_array);
@@ -1678,13 +1678,13 @@ TEST_F(CastExecutorTest, TestTimestampToNumericPrimitiveCastExecutorCastArray) {
         std::shared_ptr<arrow::Array> src_array =
             MakeArrowArray<int64_t, arrow::TimestampBuilder>(src_type, src_data);
         {
-            auto target_array = arrow::ipc::internal::json::ArrayFromJSON(
+            auto target_array = arrow::json::ArrayFromJSONString(
                                     arrow::int32(), R"([86400, 0, -86400, 1686182400, null])")
                                     .ValueOrDie();
             CheckArrayResult(cast_executor, arrow::int32(), src_array, target_array);
         }
         {
-            auto target_array = arrow::ipc::internal::json::ArrayFromJSON(
+            auto target_array = arrow::json::ArrayFromJSONString(
                                     arrow::int64(), R"([86400, 0, -86400, 1686182400, null])")
                                     .ValueOrDie();
             CheckArrayResult(cast_executor, arrow::int64(), src_array, target_array);
@@ -1697,7 +1697,7 @@ TEST_F(CastExecutorTest, TestStringToTimestampCastExecutorCastArray) {
     {
         // timestamp ranges from MIN_INT64 ns to MAX_INT64 ns in arrow timestamp array
         auto target_type = arrow::timestamp(arrow::TimeUnit::NANO);
-        auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(),
+        auto src_array = arrow::json::ArrayFromJSONString(arrow::utf8(),
                                                                    R"([
                     "2024-11-21", "2024-11-21 09:41:56", "2024-11-21 09:41:56.80160",
                     "1970-01-02 00:00:00.000000001", "1970-01-01 00:00:00.000000500",
@@ -1722,7 +1722,7 @@ TEST_F(CastExecutorTest, TestStringToTimestampCastExecutorCastArray) {
     }
     {
         auto target_type = arrow::timestamp(arrow::TimeUnit::MICRO, "Asia/Shanghai");
-        auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(),
+        auto src_array = arrow::json::ArrayFromJSONString(arrow::utf8(),
                                                                    R"([
         "1970-01-01 00:00:00.000000", "1969-12-31 23:59:59.999999",
         "1970-01-01 00:00:00.000001", null])")
@@ -1736,7 +1736,7 @@ TEST_F(CastExecutorTest, TestStringToTimestampCastExecutorCastArray) {
     }
     {
         auto target_type = arrow::timestamp(arrow::TimeUnit::MILLI);
-        auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(),
+        auto src_array = arrow::json::ArrayFromJSONString(arrow::utf8(),
                                                                    R"([
         "1970-01-01 00:00:00.000", "1969-12-31 23:59:59.999",
         "1970-01-01 00:00:00.001", null])")
@@ -1750,7 +1750,7 @@ TEST_F(CastExecutorTest, TestStringToTimestampCastExecutorCastArray) {
     }
     {
         auto target_type = arrow::timestamp(arrow::TimeUnit::SECOND, "Asia/Shanghai");
-        auto src_array = arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(),
+        auto src_array = arrow::json::ArrayFromJSONString(arrow::utf8(),
                                                                    R"([
         "1970-01-01T00:00:00", "1969-12-31T23:59:59",
         "1970-01-01T00:00:01", null])")
@@ -1921,7 +1921,7 @@ TEST_F(CastExecutorTest, TestDecimalToNumericPrimitiveCastExecutorCastArray) {
     // to floating
     {
         auto src_array =
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::decimal128(38, 5),
                 R"(["02.10000","-11.10000", "22.60000", "-121.50000", "0.00000", "1.23456", "-1.23456",
                 "111111111111111111111111111111111.11111", "-111111111111111111111111111111111.11111",
@@ -1937,7 +1937,7 @@ TEST_F(CastExecutorTest, TestDecimalToNumericPrimitiveCastExecutorCastArray) {
     }
     {
         auto src_array =
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::decimal128(38, 5),
                 R"(["02.10000","-11.10000", "22.60000", "-121.50000", "0.00000", "1.23456", "-1.23456",
                 "111111111111111111111111111111111.11111", "-111111111111111111111111111111111.11111",
@@ -2199,7 +2199,7 @@ TEST_F(CastExecutorTest, TestNumericPrimitiveToDecimalCastExecutorCastArray) {
                                        -123.456, -999.994, 999.996, MAX_FLOAT, MIN_FLOAT};
         auto src_array = MakeArrowArray<float, arrow::FloatBuilder>(arrow::float32(), src_data);
         auto target_array =
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::decimal128(5, 2),
                 R"(["0.00", "1.10", "123.45", "123.46", "999.99", "-123.45", "-123.46", "-999.99", null, null, null, null])")
                 .ValueOrDie();
@@ -2212,7 +2212,7 @@ TEST_F(CastExecutorTest, TestNumericPrimitiveToDecimalCastExecutorCastArray) {
                                         -999.994, 999.996, MAX_DOUBLE, MIN_DOUBLE};
         auto src_array = MakeArrowArray<double, arrow::DoubleBuilder>(arrow::float64(), src_data);
         auto target_array =
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::decimal128(5, 2),
                 R"(["0.00", "1.10", "123.45", "123.46", "999.99", "-123.45", "-123.46", "-999.99", "-999.99", null, null, null, null])")
                 .ValueOrDie();

@@ -156,7 +156,7 @@ TEST_F(TantivyGlobalIndexIntegrationTest, EnglishCorpus) {
     std::map<std::string, std::string> options = {
         {"tantivy-fulltext.write.omit-term-freq-and-position", "false"},
     };
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type_, R"([
+    auto array = arrow::json::ArrayFromJSONString(data_type_, R"([
         ["This is an test document."],
         ["This is an new document document document."],
         ["Document document document document test."],
@@ -240,7 +240,7 @@ TEST_F(TantivyGlobalIndexIntegrationTest, ChineseCorpus) {
         {"tantivy-fulltext.tantivy.write.tokenizer", "paimon_jieba"},
         {"tantivy-fulltext.jieba.tokenize-mode", "query"},
     };
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(data_type_, R"([
+    auto array = arrow::json::ArrayFromJSONString(data_type_, R"([
 ["QianWen 是一个基于 AI 的智能助手，类似于 Siri 和 Alexa。我们正在用 Python 开发 QianWen 的 Natural Language Understanding 模块，该模块支持多轮对话和意图识别功能，是新一代智能助手的核心技术之一。"],
 ["最近开源了一个新项目叫ｑｉａｎｗｅｎ（全角字符），功能类似之前的 Qianwen，是一个面向 AI 应用的智能助手。它不仅支持 Machine Learning 和 NLP 技术，还提供了可扩展的开发框架，便于开发者构建自己的智能助手系统。"],
 ["我们在测试 qianwen-core v1.2 和 ai-engine-alpha 中的 bug，重点优化了 qianwen 的响应速度和稳定性。本次更新增强了核心模块的功能，提升了智能助手的开发效率，并修复了与 NLP 模块相关的多个问题。"],

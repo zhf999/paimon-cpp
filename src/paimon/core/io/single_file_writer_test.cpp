@@ -22,7 +22,7 @@
 #include "arrow/api.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/utils/arrow/status_utils.h"
 #include "paimon/core/core_options.h"
@@ -51,7 +51,7 @@ TEST(SingleFileWriterTest, TestSimple) {
     auto converter = [&](int32_t value, ::ArrowArray* dest) -> Status {
         std::string value_str = "[[" + std::to_string(value) + "]]";
         auto array =
-            arrow::ipc::internal::json::ArrayFromJSON(data_type, value_str.c_str()).ValueOrDie();
+            arrow::json::ArrayFromJSONString(data_type, value_str.c_str()).ValueOrDie();
         PAIMON_RETURN_NOT_OK_FROM_ARROW(arrow::ExportArray(*array, dest));
         return Status::OK();
     };

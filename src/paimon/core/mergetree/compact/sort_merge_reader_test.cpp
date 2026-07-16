@@ -26,7 +26,7 @@
 #include "arrow/api.h"
 #include "arrow/array/array_base.h"
 #include "arrow/array/array_nested.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/types/data_field.h"
 #include "paimon/common/utils/fields_comparator.h"
@@ -196,25 +196,25 @@ TEST_F(SortMergeReaderTest, TestSimpleWithTwoSameKeys) {
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
 
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 2, 10]
     ])")
             .ValueOrDie());
 
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 3, 30]
     ])")
             .ValueOrDie());
 
     auto src_array3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 5, 50]
     ])")
             .ValueOrDie());
 
     auto src_array4 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 2, 30]
     ])")
             .ValueOrDie());
@@ -242,25 +242,25 @@ TEST_F(SortMergeReaderTest, TestSimpleWithThreeSameKeys) {
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
 
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 2, 10]
     ])")
             .ValueOrDie());
 
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [2, 0, 2, 30]
     ])")
             .ValueOrDie());
 
     auto src_array3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 5, 50]
     ])")
             .ValueOrDie());
 
     auto src_array4 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 2, 30]
     ])")
             .ValueOrDie());
@@ -287,25 +287,25 @@ TEST_F(SortMergeReaderTest, TestSimpleWithThreeSameKeys2) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 2, 10]
     ])")
             .ValueOrDie());
 
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 2, 30]
     ])")
             .ValueOrDie());
 
     auto src_array3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 5, 50]
     ])")
             .ValueOrDie());
 
     auto src_array4 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [2, 0, 2, 30]
     ])")
             .ValueOrDie());
@@ -337,7 +337,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn2Ways) {
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
 
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 1, 10, 20, 30],
         [0, 0, 1, 3, 11, 21, 31],
         [1, 0, 2, 2, 12, 22, 32],
@@ -346,7 +346,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn2Ways) {
             .ValueOrDie());
 
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 1, 1, 14, 24, 34],
         [0, 0, 1, 2, 15, 25, 35],
         [2, 0, 2, 2, 16, 26, 36],
@@ -383,7 +383,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn3Ways) {
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
 
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 10],
         [0, 0, 2, 11],
         [1, 0, 3, 12],
@@ -391,7 +391,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn3Ways) {
     ])")
             .ValueOrDie());
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 2, 14],
         [2, 0, 3, 15],
         [3, 0, 4, 16],
@@ -399,7 +399,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn3Ways) {
     ])")
             .ValueOrDie());
     auto src_array3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 1, 17],
         [2, 0, 2, 18],
         [4, 0, 4, 19],
@@ -430,7 +430,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeWithDeleteMessages) {
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
 
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 3, 1, 10],
         [2, 3, 2, 200],
         [1, 0, 3, 300]
@@ -438,7 +438,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeWithDeleteMessages) {
             .ValueOrDie());
 
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [3, 3, 1, 11],
         [4, 3, 2, 240],
         [5, 3, 3, 30]
@@ -479,7 +479,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn2WaysWithEmptyArray) {
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
 
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 10],
         [0, 0, 2, 11],
         [1, 0, 3, 12],
@@ -487,7 +487,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn2WaysWithEmptyArray) {
     ])")
             .ValueOrDie());
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
     ])")
             .ValueOrDie());
 
@@ -514,7 +514,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn2WaysWithNoOverlap) {
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
 
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 10],
         [0, 0, 2, 11],
         [1, 0, 3, 12],
@@ -522,7 +522,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn2WaysWithNoOverlap) {
     ])")
             .ValueOrDie());
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 102, 14],
         [2, 0, 103, 15],
         [3, 0, 104, 16],
@@ -553,7 +553,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn2WaysWithFullOverlap) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 10],
         [0, 0, 2, 11],
         [1, 0, 3, 12],
@@ -561,7 +561,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn2WaysWithFullOverlap) {
     ])")
             .ValueOrDie());
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 1, 14],
         [2, 0, 2, 15],
         [3, 0, 3, 16],
@@ -592,7 +592,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn2WaysWithPartialOverlap) {
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
 
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 10],
         [0, 0, 2, 11],
         [1, 0, 3, 12],
@@ -600,7 +600,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn2WaysWithPartialOverlap) {
     ])")
             .ValueOrDie());
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 1, 14],
         [2, 0, 2, 15],
         [3, 0, 3, 16],
@@ -639,7 +639,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn3WaysWithUserDefinedSeq) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3], fields[4], fields[5], fields[6]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [3, 0, 1, 1, 10, 20, 30],
         [0, 0, 1, 3, 11, 21, 31],
         [3, 0, 2, 2, 12, 22, 32],
@@ -648,7 +648,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn3WaysWithUserDefinedSeq) {
             .ValueOrDie());
 
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 1, 1, 14, 24, 34],
         [1, 0, 1, 2, 15, 25, 35],
         [2, 0, 2, 2, 18, 28, 38],
@@ -657,7 +657,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeIn3WaysWithUserDefinedSeq) {
             .ValueOrDie());
 
     auto src_array3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [2, 0, 1, 1, 14, 24, 34],
         [0, 0, 1, 2, 15, 25, 35],
         [5, 0, 2, 2, 16, 26, 36],
@@ -719,7 +719,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeWithAggMergeFunction) {
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
 
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 1, 1],
         [1, 0, 1, 2, 2],
         [2, 0, 1, 3, 3],
@@ -730,7 +730,7 @@ TEST_F(SortMergeReaderTest, TestSortMergeWithAggMergeFunction) {
             .ValueOrDie());
 
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [6, 0, 1, 5, 5],
         [7, 0, 1, 6, 6],
         [8, 0, 2, 1, 10],
@@ -784,25 +784,25 @@ TEST_F(SortMergeReaderTest, TestRawSortNoMergeKeepsDuplicateKeys) {
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
 
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 2, 10]
     ])")
             .ValueOrDie());
 
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [2, 0, 2, 30]
     ])")
             .ValueOrDie());
 
     auto src_array3 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 5, 50]
     ])")
             .ValueOrDie());
 
     auto src_array4 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [1, 0, 2, 30]
     ])")
             .ValueOrDie());
@@ -847,7 +847,7 @@ TEST_F(SortMergeReaderTest, TestRawSortNoMergeWithMinHeap) {
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
 
     auto src_array1 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 1, 1],
         [1, 0, 1, 2, 2],
         [2, 0, 1, 3, 3],
@@ -858,7 +858,7 @@ TEST_F(SortMergeReaderTest, TestRawSortNoMergeWithMinHeap) {
             .ValueOrDie());
 
     auto src_array2 = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [6, 0, 1, 5, 5],
         [7, 0, 1, 6, 6],
         [8, 0, 2, 1, 10],

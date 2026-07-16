@@ -26,7 +26,7 @@
 #include "arrow/array/array_primitive.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "arrow/util/checked_cast.h"
 #include "gtest/gtest.h"
 #include "paimon/common/utils/arrow/status_utils.h"
@@ -61,7 +61,7 @@ class BucketIdCalculatorTest : public ::testing::Test {
         bool is_pk_table, int32_t num_buckets, const std::shared_ptr<arrow::Schema>& bucket_schema,
         const std::string& data_str) const {
         PAIMON_ASSIGN_OR_RAISE_FROM_ARROW(auto bucket_array,
-                                          arrow::ipc::internal::json::ArrayFromJSON(
+                                          arrow::json::ArrayFromJSONString(
                                               arrow::struct_(bucket_schema->fields()), data_str));
         return CalculateBucketIds(is_pk_table, num_buckets, bucket_schema, bucket_array);
     }
@@ -88,7 +88,7 @@ class BucketIdCalculatorTest : public ::testing::Test {
         bool is_pk_table, int32_t num_buckets, std::unique_ptr<BucketFunction> bucket_function,
         const std::shared_ptr<arrow::Schema>& bucket_schema, const std::string& data_str) const {
         PAIMON_ASSIGN_OR_RAISE_FROM_ARROW(auto bucket_array,
-                                          arrow::ipc::internal::json::ArrayFromJSON(
+                                          arrow::json::ArrayFromJSONString(
                                               arrow::struct_(bucket_schema->fields()), data_str));
         return CalculateBucketIds(is_pk_table, num_buckets, std::move(bucket_function),
                                   bucket_schema, bucket_array);
@@ -123,7 +123,7 @@ TEST_F(BucketIdCalculatorTest, TestCompatibleWithJava) {
     arrow::FieldVector bucket_fields_with_id = bucket_schema->fields();
     bucket_fields_with_id.push_back(arrow::field("bucket_id", arrow::int32()));
     auto bucket_array_with_id = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(bucket_fields_with_id), content)
+        arrow::json::ArrayFromJSONString(arrow::struct_(bucket_fields_with_id), content)
             .ValueOrDie());
 
     // exclude bucket id array
@@ -174,7 +174,7 @@ TEST_F(BucketIdCalculatorTest, TestCompatibleWithJavaWithNull) {
     arrow::FieldVector bucket_fields_with_id = bucket_schema->fields();
     bucket_fields_with_id.push_back(arrow::field("bucket_id", arrow::int32()));
     auto bucket_array_with_id = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(bucket_fields_with_id), content)
+        arrow::json::ArrayFromJSONString(arrow::struct_(bucket_fields_with_id), content)
             .ValueOrDie());
 
     // exclude bucket id array
@@ -221,7 +221,7 @@ TEST_F(BucketIdCalculatorTest, TestCompatibleWithJavaWithTimestamp) {
     arrow::FieldVector bucket_fields_with_id = bucket_schema->fields();
     bucket_fields_with_id.push_back(arrow::field("bucket_id", arrow::int32()));
     auto bucket_array_with_id = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(bucket_fields_with_id), content)
+        arrow::json::ArrayFromJSONString(arrow::struct_(bucket_fields_with_id), content)
             .ValueOrDie());
 
     // exclude bucket id array
@@ -267,7 +267,7 @@ TEST_F(BucketIdCalculatorTest, TestInvalidCase) {
         auto bucket_schema =
             arrow::schema(arrow::FieldVector({arrow::field("b0", arrow::int32())}));
         auto bucket_array =
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), "[10, 11, 12, 13]")
+            arrow::json::ArrayFromJSONString(arrow::int32(), "[10, 11, 12, 13]")
                 .ValueOrDie();
         ASSERT_NOK_WITH_MSG(
             CalculateBucketIds(/*is_pk_table=*/false, 10, bucket_schema, bucket_array),
@@ -318,7 +318,7 @@ TEST_F(BucketIdCalculatorTest, TestVariantType) {
     auto bucket_schema = arrow::schema(raw_bucket_fields);
 
     auto bucket_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(bucket_schema->fields()), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(bucket_schema->fields()), R"([
         [true, 10, 200, 65536, 123456789, 0.0, 0.0, 2000, -86399999999500, "2134.48690000000000000009", "olá mundo，你好世界。Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", "Alice"],
         [false, -128, -32768, -2147483648, -9223372036854775808, -3.4028235E38, -1.7976931348623157E308, -719528, -9223372036854775808, "-999999999999999999.99999999999999999999", "Alice", "olá mundo，你好世界。Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference."],
         [true, 127, 32767, 2147483647, 9223372036854775807, 3.4028235E38, 1.7976931348623157E308, 2932896, 9223372036854775807, "999999999999999999.99999999999999999999", "Alice", "olá mundo，你好世界。Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference."],
@@ -385,7 +385,7 @@ TEST_F(BucketIdCalculatorTest, TestCreateWithDefaultBucketFunction) {
         BucketIdCalculator::Create(/*is_pk_table=*/true, /*num_buckets=*/10, GetDefaultPool()));
 
     auto bucket_array1 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(bucket_schema->fields()), data_str)
+        arrow::json::ArrayFromJSONString(arrow::struct_(bucket_schema->fields()), data_str)
             .ValueOrDie();
     ::ArrowArray c_array1;
     EXPECT_TRUE(arrow::ExportArray(*bucket_array1, &c_array1).ok());
@@ -395,7 +395,7 @@ TEST_F(BucketIdCalculatorTest, TestCreateWithDefaultBucketFunction) {
     ASSERT_OK(calc_explicit->CalculateBucketIds(&c_array1, &c_schema1, result_explicit.data()));
 
     auto bucket_array2 =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(bucket_schema->fields()), data_str)
+        arrow::json::ArrayFromJSONString(arrow::struct_(bucket_schema->fields()), data_str)
             .ValueOrDie();
     ::ArrowArray c_array2;
     EXPECT_TRUE(arrow::ExportArray(*bucket_array2, &c_array2).ok());
@@ -423,7 +423,7 @@ TEST_F(BucketIdCalculatorTest, TestCreateWithModBucketFunction) {
                                             std::move(mod_func), bucket_schema, data_str));
 
     auto bucket_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(bucket_schema->fields()), data_str)
+        arrow::json::ArrayFromJSONString(arrow::struct_(bucket_schema->fields()), data_str)
             .ValueOrDie();
     ::ArrowArray c_array;
     EXPECT_TRUE(arrow::ExportArray(*bucket_array, &c_array).ok());
@@ -450,7 +450,7 @@ TEST_F(BucketIdCalculatorTest, TestCreateWithHiveBucketFunction) {
                                                         field_infos, GetDefaultPool()));
 
     auto bucket_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(bucket_schema->fields()), data_str)
+        arrow::json::ArrayFromJSONString(arrow::struct_(bucket_schema->fields()), data_str)
             .ValueOrDie();
     ::ArrowArray c_array;
     EXPECT_TRUE(arrow::ExportArray(*bucket_array, &c_array).ok());

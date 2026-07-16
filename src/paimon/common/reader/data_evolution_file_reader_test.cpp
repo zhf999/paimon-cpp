@@ -20,9 +20,7 @@
 
 #include "arrow/api.h"
 #include "arrow/array/array_base.h"
-#include "arrow/c/abi.h"
-#include "arrow/c/bridge.h"
-#include "arrow/ipc/api.h"
+#include "arrow/json/from_string.h"
 #include "arrow/util/range.h"
 #include "gtest/gtest.h"
 #include "paimon/common/utils/arrow/mem_utils.h"
@@ -319,7 +317,7 @@ TEST_P(DataEvolutionFileReaderTest, TestSimple) {
     std::vector<int32_t> reader_offsets = {0, 2, 0, 1, 2, 1};
     std::vector<int32_t> field_offsets = {0, 0, 1, 1, 1, 0};
 
-    auto array0 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array0 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[0], read_fields[2]}), R"([
         [0, "00"],
         [1, "01"],
@@ -329,7 +327,7 @@ TEST_P(DataEvolutionFileReaderTest, TestSimple) {
         [5, "05"]
 ])")
                       .ValueOrDie();
-    auto array1 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array1 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[5], read_fields[3]}), R"([
         [10, 110],
         [11, 111],
@@ -339,7 +337,7 @@ TEST_P(DataEvolutionFileReaderTest, TestSimple) {
         [15, 115]
 ])")
                       .ValueOrDie();
-    auto array2 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array2 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[1], read_fields[4]}), R"([
         [20, "20"],
         [21, "21"],
@@ -351,7 +349,7 @@ TEST_P(DataEvolutionFileReaderTest, TestSimple) {
                       .ValueOrDie();
 
     auto expected_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(read_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(read_fields), R"([
         [0, 20, "00", 110, "20", 10],
         [1, 21, "01", 111, "21", 11],
         [2, 22, "02", 112, "22", 12],
@@ -376,7 +374,7 @@ TEST_P(DataEvolutionFileReaderTest, TestWithNonExistField) {
     std::vector<int32_t> reader_offsets = {0, 2, 0, 1, 2, 1, -1};
     std::vector<int32_t> field_offsets = {0, 0, 1, 1, 1, 0, -1};
 
-    auto array0 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array0 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[0], read_fields[2]}), R"([
         [0, "00"],
         [1, "01"],
@@ -386,7 +384,7 @@ TEST_P(DataEvolutionFileReaderTest, TestWithNonExistField) {
         [5, "05"]
 ])")
                       .ValueOrDie();
-    auto array1 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array1 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[5], read_fields[3]}), R"([
         [10, 110],
         [11, 111],
@@ -396,7 +394,7 @@ TEST_P(DataEvolutionFileReaderTest, TestWithNonExistField) {
         [15, 115]
 ])")
                       .ValueOrDie();
-    auto array2 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array2 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[1], read_fields[4]}), R"([
         [20, "20"],
         [21, "21"],
@@ -408,7 +406,7 @@ TEST_P(DataEvolutionFileReaderTest, TestWithNonExistField) {
                       .ValueOrDie();
 
     auto expected_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(read_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(read_fields), R"([
         [0, 20, "00", 110, "20", 10, null],
         [1, 21, "01", 111, "21", 11, null],
         [2, 22, "02", 112, "22", 12, null],
@@ -432,7 +430,7 @@ TEST_P(DataEvolutionFileReaderTest, TestReadFromPartialReaders) {
     std::vector<int32_t> reader_offsets = {0, 3, 0, 1, 3, 1};
     std::vector<int32_t> field_offsets = {0, 0, 1, 1, 1, 0};
 
-    auto array0 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array0 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[0], read_fields[2]}), R"([
         [0, "00"],
         [1, "01"],
@@ -442,7 +440,7 @@ TEST_P(DataEvolutionFileReaderTest, TestReadFromPartialReaders) {
         [5, "05"]
 ])")
                       .ValueOrDie();
-    auto array1 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array1 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[5], read_fields[3]}), R"([
         [10, 110],
         [11, 111],
@@ -452,7 +450,7 @@ TEST_P(DataEvolutionFileReaderTest, TestReadFromPartialReaders) {
         [15, 115]
 ])")
                       .ValueOrDie();
-    auto array3 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array3 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[1], read_fields[4]}), R"([
         [20, "20"],
         [21, "21"],
@@ -464,7 +462,7 @@ TEST_P(DataEvolutionFileReaderTest, TestReadFromPartialReaders) {
                       .ValueOrDie();
 
     auto expected_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(read_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(read_fields), R"([
         [0, 20, "00", 110, "20", 10],
         [1, 21, "01", 111, "21", 11],
         [2, 22, "02", 112, "22", 12],
@@ -492,7 +490,7 @@ TEST_P(DataEvolutionFileReaderTest, TestNestedType) {
     std::vector<int32_t> reader_offsets = {0, 1, 0, 1, 0, 1};
     std::vector<int32_t> field_offsets = {2, 0, 1, 1, 0, 2};
 
-    auto array0 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array0 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[4], read_fields[2], read_fields[0]}), R"([
         [2456, [true, 2], [[0, 0]]],
         [24, [true, 1], [[0, 1]]],
@@ -502,7 +500,7 @@ TEST_P(DataEvolutionFileReaderTest, TestNestedType) {
         [24, [true, 2], [[11, 64], [12, 32]]]
 ])")
                       .ValueOrDie();
-    auto array1 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array1 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[1], read_fields[3], read_fields[5]}), R"([
         [[0.1, 0.2], "1970-01-01 00:02:03.123123", "0.22"],
         [[0.1, 0.3], "1970-01-01 00:02:03.999999", "0.28"],
@@ -514,7 +512,7 @@ TEST_P(DataEvolutionFileReaderTest, TestNestedType) {
                       .ValueOrDie();
 
     auto expected_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(read_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(read_fields), R"([
         [[[0, 0]], [0.1, 0.2], [true, 2], "1970-01-01 00:02:03.123123", 2456, "0.22"],
         [[[0, 1]], [0.1, 0.3], [true, 1], "1970-01-01 00:02:03.999999", 24, "0.28"],
         [[[10, 10]], [1.1, 1.2], [false, 12], "1970-01-01 00:02:03.123123", 2456, "0.22"],
@@ -538,7 +536,7 @@ TEST_P(DataEvolutionFileReaderTest, TestWithBitmap) {
     std::vector<int32_t> field_offsets = {0, 0, 1, 1, 1, 0, -1};
 
     RoaringBitmap32 selection_bitmap = RoaringBitmap32::From({1, 3, 5});
-    auto array0 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array0 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[0], read_fields[2]}), R"([
         [0, "00"],
         [1, "01"],
@@ -548,7 +546,7 @@ TEST_P(DataEvolutionFileReaderTest, TestWithBitmap) {
         [5, "05"]
 ])")
                       .ValueOrDie();
-    auto array1 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array1 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[5], read_fields[3]}), R"([
         [10, 110],
         [11, 111],
@@ -558,7 +556,7 @@ TEST_P(DataEvolutionFileReaderTest, TestWithBitmap) {
         [15, 115]
 ])")
                       .ValueOrDie();
-    auto array2 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array2 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[1], read_fields[4]}), R"([
         [20, "20"],
         [21, "21"],
@@ -570,7 +568,7 @@ TEST_P(DataEvolutionFileReaderTest, TestWithBitmap) {
                       .ValueOrDie();
 
     auto expected_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(read_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(read_fields), R"([
         [1, 21, "01", 111, "21", 11, null],
         [3, 23, "03", 113, "23", 13, null],
         [5, 25, "05", 115, "25", 15, null]
@@ -589,7 +587,7 @@ TEST_P(DataEvolutionFileReaderTest, TestSingleReaderRowCountMismatch) {
     std::vector<int32_t> reader_offsets = {0, 1, 0, 1};
     std::vector<int32_t> field_offsets = {0, 0, 1, 1};
 
-    auto array0 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array0 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[0], read_fields[2]}), R"([
         [0, "00"],
         [1, "01"],
@@ -599,7 +597,7 @@ TEST_P(DataEvolutionFileReaderTest, TestSingleReaderRowCountMismatch) {
         [5, "05"]
 ])")
                       .ValueOrDie();
-    auto array1 = arrow::ipc::internal::json::ArrayFromJSON(
+    auto array1 = arrow::json::ArrayFromJSONString(
                       arrow::struct_({read_fields[1], read_fields[3]}), R"([
         [10, 110],
         [11, 111],

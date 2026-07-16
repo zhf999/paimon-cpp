@@ -20,14 +20,14 @@
 
 #include "arrow/api.h"
 #include "arrow/array/array_dict.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/memory/memory_pool.h"
 
 namespace paimon::test {
 TEST(ColumnarUtilsTest, TestGetViewAndBytes) {
     auto pool = GetDefaultPool();
-    auto array = arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(), R"(["abc", "def", "hi"])")
+    auto array = arrow::json::ArrayFromJSONString(arrow::utf8(), R"(["abc", "def", "hi"])")
                      .ValueOrDie();
     std::string_view view = ColumnarUtils::GetView(array.get(), 2);
     ASSERT_EQ(std::string(view), "hi");
@@ -37,11 +37,11 @@ TEST(ColumnarUtilsTest, TestGetViewAndBytes) {
 
 TEST(ColumnarUtilsTest, TestGetViewAndBytesOfDict) {
     auto pool = GetDefaultPool();
-    auto dict = arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(), R"(["foo", "bar", "baz"])")
+    auto dict = arrow::json::ArrayFromJSONString(arrow::utf8(), R"(["foo", "bar", "baz"])")
                     .ValueOrDie();
     auto dict_type = arrow::dictionary(arrow::int32(), arrow::utf8());
     auto indices =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), "[1, 2, 0, 2, 0]").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int32(), "[1, 2, 0, 2, 0]").ValueOrDie();
     std::shared_ptr<arrow::DictionaryArray> dict_array =
         std::make_shared<arrow::DictionaryArray>(dict_type, indices, dict);
 

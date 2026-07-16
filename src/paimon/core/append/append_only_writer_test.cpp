@@ -31,7 +31,7 @@
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
 #include "arrow/c/helpers.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "arrow/type.h"
 #include "arrow/util/key_value_metadata.h"
 #include "gtest/gtest.h"
@@ -250,7 +250,7 @@ class AppendOnlyWriterTest : public testing::Test {
     std::unique_ptr<RecordBatch> CreateBatch(const std::shared_ptr<arrow::Schema>& schema,
                                              const std::string& json) const {
         auto struct_type = arrow::struct_(schema->fields());
-        auto array = arrow::ipc::internal::json::ArrayFromJSON(struct_type, json).ValueOrDie();
+        auto array = arrow::json::ArrayFromJSONString(struct_type, json).ValueOrDie();
         ::ArrowArray arrow_array;
         EXPECT_TRUE(arrow::ExportArray(*array, &arrow_array).ok());
         RecordBatchBuilder batch_builder(&arrow_array);
@@ -985,14 +985,11 @@ TEST_P(AppendOnlyWriterShreddingTest, TestWriteSharedShreddingMapFieldContent) {
                              expected_meta, compression);
 
     auto physical_type = arrow::struct_(expected_physical_schema->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(physical_type, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(physical_type, {R"([
         [1, [[0, 1, -1], 10, 20, null, null]],
         [2, [[2, 0, 1],  30, 40, 50,   null]],
         [3, [[0, -1, -1], 60, null, null, null]]
-    ])"},
-                                                                 &expected_array)
-                    .ok());
+    ])"}).ValueOrDie();
     CheckFileContent(data_file_path, format, expected_array);
 }
 
@@ -1044,13 +1041,10 @@ TEST_P(AppendOnlyWriterShreddingTest, TestSharedShreddingMapAllEmptyFirstFile) {
                              options.GetFileCompression());
 
     auto physical_type = arrow::struct_(first_schema->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(physical_type, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(physical_type, {R"([
         [1, [[-1, -1, -1], null, null, null, null]],
         [2, [[-1, -1, -1], null, null, null, null]]
-    ])"},
-                                                                 &expected_array)
-                    .ok());
+    ])"}).ValueOrDie();
     CheckFileContent(data_file_path, format, expected_array);
 }
 
@@ -1100,13 +1094,10 @@ TEST_P(AppendOnlyWriterShreddingTest, TestSharedShreddingMapAllNullThenAllEmptyF
                              options.GetFileCompression());
 
     auto first_physical_type = arrow::struct_(first_schema->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_null_array;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(first_physical_type, {R"([
+    auto expected_null_array = arrow::json::ChunkedArrayFromJSONString(first_physical_type, {R"([
         [1, null],
         [2, null]
-    ])"},
-                                                                 &expected_null_array)
-                    .ok());
+    ])"}).ValueOrDie();
     CheckFileContent(null_file_path, format, expected_null_array);
 
     auto empty_batch = CreateBatch(logical_schema, R"([
@@ -1130,13 +1121,10 @@ TEST_P(AppendOnlyWriterShreddingTest, TestSharedShreddingMapAllNullThenAllEmptyF
                              options.GetFileCompression());
 
     auto second_physical_type = arrow::struct_(second_schema->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_empty_array;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(second_physical_type, {R"([
+    auto expected_empty_array = arrow::json::ChunkedArrayFromJSONString(second_physical_type, {R"([
         [3, [[-1], null, null]],
         [4, [[-1], null, null]]
-    ])"},
-                                                                 &expected_empty_array)
-                    .ok());
+    ])"}).ValueOrDie();
     CheckFileContent(empty_file_path, format, expected_empty_array);
 
     auto null_value_batch = CreateBatch(logical_schema, R"([
@@ -1160,14 +1148,11 @@ TEST_P(AppendOnlyWriterShreddingTest, TestSharedShreddingMapAllNullThenAllEmptyF
     CheckShreddingFileSchema(null_value_file_path, format, second_schema, /*field_index=*/1,
                              null_value_meta, options.GetFileCompression());
 
-    std::shared_ptr<arrow::ChunkedArray> expected_null_value_array;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(second_physical_type, {R"([
+    auto expected_null_value_array = arrow::json::ChunkedArrayFromJSONString(second_physical_type, {R"([
         [5, [[0], null, null]],
         [6, [[1], null, null]],
         [7, [[2], 7, [[3, null]]]]
-    ])"},
-                                                                 &expected_null_value_array)
-                    .ok());
+    ])"}).ValueOrDie();
     CheckFileContent(null_value_file_path, format, expected_null_value_array);
 
     ASSERT_OK(writer->Close());
@@ -1235,14 +1220,11 @@ TEST_P(AppendOnlyWriterShreddingTest, TestWriteSharedShreddingMapWithOverflow) {
 
     // Verify data content.
     auto physical_type = arrow::struct_(expected_physical_schema->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(physical_type, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(physical_type, {R"([
         [1, [[0, 1],  1, 2, null]],
         [2, [[2, 0],  3, 4, [[1, 5]]]],
         [3, [[3, 4],  6, 7, [[5, 8], [0, 9]]]]
-    ])"},
-                                                                 &expected_array)
-                    .ok());
+    ])"}).ValueOrDie();
     CheckFileContent(data_file_path, format, expected_array);
 }
 
@@ -1301,15 +1283,12 @@ TEST_P(AppendOnlyWriterShreddingTest, TestWriteSharedShreddingMapWithLruPlacemen
                              expected_meta, options.GetFileCompression());
 
     auto physical_type = arrow::struct_(expected_physical_schema->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(physical_type, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(physical_type, {R"([
         [1, [[0, 1, 2],  10,  20,  30, null]],
         [2, [[0, 1, -1], 40,  50, null, null]],
         [3, [[-1, -1, 3], null, null, 60, null]],
         [4, [[0, 1, 3],  70,  80, 100, [[2, 90]]]]
-    ])"},
-                                                                 &expected_array)
-                    .ok());
+    ])"}).ValueOrDie();
     CheckFileContent(data_file_path, format, expected_array);
 }
 
@@ -1398,12 +1377,9 @@ TEST_P(AppendOnlyWriterShreddingTest, TestSharedShreddingMapKAdaptationAcrossFil
 
     // Verify data: 5 keys, K=3, so w and v overflow.
     auto physical_type2 = arrow::struct_(phys_schema2->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array2;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(physical_type2, {R"([
+    auto expected_array2 = arrow::json::ChunkedArrayFromJSONString(physical_type2, {R"([
         [3, [[0, 1, 2], 100, 200, 300, [[3, 400], [4, 500]]]]
-    ])"},
-                                                                 &expected_array2)
-                    .ok());
+    ])"}).ValueOrDie();
     CheckFileContent(file2_path, format, expected_array2);
 
     // --- File 3: K should adapt to min(max_window=max(3,5)=5, K_max=10) = 5 ---
@@ -1436,12 +1412,9 @@ TEST_P(AppendOnlyWriterShreddingTest, TestSharedShreddingMapKAdaptationAcrossFil
 
     // Verify data: 4 keys fit in K=5, col4 unused, no overflow.
     auto physical_type3 = arrow::struct_(phys_schema3->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array3;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(physical_type3, {R"([
+    auto expected_array3 = arrow::json::ChunkedArrayFromJSONString(physical_type3, {R"([
         [4, [[0, 1, 2, 3, -1], 1000, 2000, 3000, 4000, null, null]]
-    ])"},
-                                                                 &expected_array3)
-                    .ok());
+    ])"}).ValueOrDie();
     CheckFileContent(file3_path, format, expected_array3);
 
     ASSERT_OK(writer->Close());
@@ -1497,12 +1470,9 @@ TEST_P(AppendOnlyWriterShreddingTest, TestSharedShreddingMapUsesInitialContextFo
                              options.GetFileCompression());
 
     auto physical_type = arrow::struct_(physical_schema->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(physical_type, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(physical_type, {R"([
         [1, [[0, 1], 10, 20, [[2, 30]]]]
-    ])"},
-                                                                 &expected_array)
-                    .ok());
+    ])"}).ValueOrDie();
     CheckFileContent(file_path, format, expected_array);
 
     ASSERT_OK(writer->Close());
@@ -1708,14 +1678,11 @@ TEST_P(AppendOnlyWriterShreddingTest, TestSharedShreddingMapDataFileMetaInfo) {
                                                logical_schema, col_to_k));
     auto physical_type = arrow::struct_(phys_schema->fields());
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(physical_type, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(physical_type, {R"([
         [1, [[0, 1, -1], 10, 20, null, null]],
         [2, [[2, -1, -1], 30, null, null, null]],
         [3, [[0, 1, 2],  40, 50, 60, null]]
-    ])"},
-                                                                 &expected_array)
-                    .ok());
+    ])"}).ValueOrDie();
     CheckFileContent(file_path, format, expected_array);
 
     ASSERT_OK(writer->Close());
@@ -1807,13 +1774,10 @@ TEST_P(AppendOnlyWriterShreddingTest, TestSharedShreddingMapWithBlobSeparation) 
 
     // Verify main file content: id + shredded tags.
     auto physical_type = arrow::struct_(expected_physical_schema->fields());
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    ASSERT_TRUE(arrow::ipc::internal::json::ChunkedArrayFromJSON(physical_type, {R"([
+    auto expected_array = arrow::json::ChunkedArrayFromJSONString(physical_type, {R"([
         [1, [[0, 1, -1], 10, 20, null, null]],
         [2, [[2, -1, -1], 30, null, null, null]]
-    ])"},
-                                                                 &expected_array)
-                    .ok());
+    ])"}).ValueOrDie();
     CheckFileContent(main_file_path, format, expected_array);
 
     // Verify blob file exists and can be read (blob_data column).

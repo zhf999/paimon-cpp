@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/columnar/columnar_row.h"
 #include "paimon/common/utils/decimal_utils.h"
@@ -37,7 +37,7 @@ TEST(BinarySerializerUtilsTest, TestSimple) {
                         arrow::field("f11", arrow::timestamp(arrow::TimeUnit::NANO)),
                         arrow::field("f12", arrow::decimal128(5, 2))});
 
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(arrow_type,
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(arrow_type,
                                                                                     R"([
         [true, 0, 32767, 2147483647, null, 4294967295, 0.5, 1.141, "20250327", "banana", 2026, 5000001, "5.12"]
     ])")
@@ -90,7 +90,7 @@ TEST(BinarySerializerUtilsTest, TestNestedType) {
 
     auto arrow_type = arrow::struct_({inner_child1, inner_child2, inner_child3});
     // each inner child per row
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(arrow_type,
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(arrow_type,
                                                                                     R"([
 [[[100, [1, 2, 3, 4]], [101, [5, 6, 7]]],
 [[200, [[500, 1]]], [201, [[501, 2]]]],
@@ -153,7 +153,7 @@ TEST(BinarySerializerUtilsTest, TestNestedTypeWithNull) {
 
     auto arrow_type = arrow::struct_({inner_child1, inner_child2, inner_child3});
     // each inner child per row
-    std::shared_ptr<arrow::Array> array = arrow::ipc::internal::json::ArrayFromJSON(arrow_type,
+    std::shared_ptr<arrow::Array> array = arrow::json::ArrayFromJSONString(arrow_type,
                                                                                     R"([
 [[[100, null], [101, [5, 6, null]]],
 [[200, [[500, null]]], [201, [[501, 2]]]],

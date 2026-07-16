@@ -21,7 +21,7 @@
 
 #include "arrow/api.h"
 #include "arrow/array/array_nested.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "arrow/util/checked_cast.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/internal_map.h"
@@ -36,7 +36,7 @@ TEST(ColumnarArrayTest, TestSimple) {
     auto pool = GetDefaultPool();
     {
         auto f1 =
-            arrow::ipc::internal::json::ArrayFromJSON(
+            arrow::json::ArrayFromJSONString(
                 arrow::list(arrow::boolean()), "[[true, false], [true], [false], [false, true]]")
                 .ValueOrDie();
         auto list_array = arrow::internal::checked_pointer_cast<arrow::ListArray>(f1);
@@ -47,7 +47,7 @@ TEST(ColumnarArrayTest, TestSimple) {
         ASSERT_EQ(array.ToBooleanArray().value(), expected_array);
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::list(arrow::int8()),
+        auto f1 = arrow::json::ArrayFromJSONString(arrow::list(arrow::int8()),
                                                             "[[1, 1, 2], [3], [2], [2]]")
                       .ValueOrDie();
         auto list_array = arrow::internal::checked_pointer_cast<arrow::ListArray>(f1);
@@ -57,7 +57,7 @@ TEST(ColumnarArrayTest, TestSimple) {
         ASSERT_EQ(array.ToByteArray().value(), expected_array);
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::list(arrow::int16()),
+        auto f1 = arrow::json::ArrayFromJSONString(arrow::list(arrow::int16()),
                                                             "[[1, 1, 2], [3], [2], [-4]]")
                       .ValueOrDie();
         auto list_array = arrow::internal::checked_pointer_cast<arrow::ListArray>(f1);
@@ -69,7 +69,7 @@ TEST(ColumnarArrayTest, TestSimple) {
         ASSERT_EQ(array.ToShortArray().value(), expected_array);
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::list(arrow::int32()),
+        auto f1 = arrow::json::ArrayFromJSONString(arrow::list(arrow::int32()),
                                                             "[[1, 1, 2], [3], [2], [-4]]")
                       .ValueOrDie();
         auto list_array = arrow::internal::checked_pointer_cast<arrow::ListArray>(f1);
@@ -79,7 +79,7 @@ TEST(ColumnarArrayTest, TestSimple) {
         ASSERT_EQ(array.ToIntArray().value(), expected_array);
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::list(arrow::int64()),
+        auto f1 = arrow::json::ArrayFromJSONString(arrow::list(arrow::int64()),
                                                             "[[1, 1, 2], [3], [2], [-4]]")
                       .ValueOrDie();
         auto list_array = arrow::internal::checked_pointer_cast<arrow::ListArray>(f1);
@@ -89,7 +89,7 @@ TEST(ColumnarArrayTest, TestSimple) {
         ASSERT_EQ(array.ToLongArray().value(), expected_array);
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::list(arrow::int64()),
+        auto f1 = arrow::json::ArrayFromJSONString(arrow::list(arrow::int64()),
                                                             "[[1, 1, 2], [3], [null], null]")
                       .ValueOrDie();
         auto list_array = arrow::internal::checked_pointer_cast<arrow::ListArray>(f1);
@@ -97,7 +97,7 @@ TEST(ColumnarArrayTest, TestSimple) {
         ASSERT_NOK_WITH_MSG(array.ToLongArray(), "is null");
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::float32()), "[[0.0, 1.1, 2.2], [3.3], [4.4], [5.5]]")
                       .ValueOrDie();
         auto list_array = arrow::internal::checked_pointer_cast<arrow::ListArray>(f1);
@@ -107,7 +107,7 @@ TEST(ColumnarArrayTest, TestSimple) {
         ASSERT_EQ(array.ToFloatArray().value(), expected_array);
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::float64()), "[[0.0, 1.1, 2.2], [3.3], [4.4], [5.5]]")
                       .ValueOrDie();
         auto list_array = arrow::internal::checked_pointer_cast<arrow::ListArray>(f1);
@@ -117,7 +117,7 @@ TEST(ColumnarArrayTest, TestSimple) {
         ASSERT_EQ(array.ToDoubleArray().value(), expected_array);
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::utf8()), R"([["abc", "def"], ["efg"], ["hello"], ["hi"]])")
                       .ValueOrDie();
         auto list_array = arrow::internal::checked_pointer_cast<arrow::ListArray>(f1);
@@ -130,7 +130,7 @@ TEST(ColumnarArrayTest, TestSimple) {
 TEST(ColumnarArrayTest, TestComplexAndNestedType) {
     auto pool = GetDefaultPool();
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::list(arrow::date32()),
+        auto f1 = arrow::json::ArrayFromJSONString(arrow::list(arrow::date32()),
                                                             "[[1, 1, 2], [3], [2], [-4]]")
                       .ValueOrDie();
         auto list_array = arrow::internal::checked_pointer_cast<arrow::ListArray>(f1);
@@ -138,7 +138,7 @@ TEST(ColumnarArrayTest, TestComplexAndNestedType) {
         ASSERT_EQ(array.GetDate(0), 3);
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::decimal128(10, 3)),
                       R"([["1.234", "1234.000"], ["-9876.543"], ["666.888"]])")
                       .ValueOrDie();
@@ -147,7 +147,7 @@ TEST(ColumnarArrayTest, TestComplexAndNestedType) {
         ASSERT_EQ(array.GetDecimal(0, 10, 3), Decimal(10, 3, 1234));
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::timestamp(arrow::TimeUnit::NANO)),
                       R"([["1970-01-01T00:00:59"],["2000-02-29T23:23:23",
           "1899-01-01T00:59:20"],["2033-05-18T03:33:20"]])")
@@ -158,7 +158,7 @@ TEST(ColumnarArrayTest, TestComplexAndNestedType) {
         ASSERT_EQ(ts, Timestamp(59000, 0));
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::list(arrow::binary()),
+        auto f1 = arrow::json::ArrayFromJSONString(arrow::list(arrow::binary()),
                                                             R"([["aaa", "bb"], ["ccc"], ["bbb"]])")
                       .ValueOrDie();
         auto list_array = arrow::internal::checked_pointer_cast<arrow::ListArray>(f1);
@@ -167,7 +167,7 @@ TEST(ColumnarArrayTest, TestComplexAndNestedType) {
         ASSERT_EQ(std::string(array.GetStringView(1)), "bb");
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(arrow::list(arrow::struct_({
+        auto f1 = arrow::json::ArrayFromJSONString(arrow::list(arrow::struct_({
                                                                 field("sub1", arrow::int64()),
                                                                 field("sub2", arrow::int64()),
                                                                 field("sub3", arrow::int64()),
@@ -189,7 +189,7 @@ TEST(ColumnarArrayTest, TestComplexAndNestedType) {
         ASSERT_EQ(result_row->GetLong(3), 3);
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::list(arrow::int64())), "[[[1, 2, 3], [4, 5, 6]], []]")
                       .ValueOrDie();
         auto list_array = arrow::internal::checked_pointer_cast<arrow::ListArray>(f1);
@@ -200,7 +200,7 @@ TEST(ColumnarArrayTest, TestComplexAndNestedType) {
         ASSERT_EQ(inner_result_array->ToLongArray().value(), values);
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::map(arrow::int32(), arrow::int64())),
                       R"([
                        [[[1, 3], [4, 4]]], []
@@ -219,7 +219,7 @@ TEST(ColumnarArrayTest, TestTimestampType) {
     auto pool = GetDefaultPool();
     auto timezone = DateTimeUtils::GetLocalTimezoneName();
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::timestamp(arrow::TimeUnit::SECOND)),
                       R"([["1970-01-01T00:00:59"],["2000-02-29T23:23:23",
           "1899-01-01T00:59:20"],["2033-05-18T03:33:20"]])")
@@ -230,7 +230,7 @@ TEST(ColumnarArrayTest, TestTimestampType) {
         ASSERT_EQ(ts, Timestamp(951866603000, 0)) << ts.GetMillisecond();
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::timestamp(arrow::TimeUnit::MILLI)),
                       R"([["1970-01-01T00:00:59"],["2000-02-29T23:23:23.001",
           "1899-01-01T00:59:20"],["2033-05-18T03:33:20"]])")
@@ -241,7 +241,7 @@ TEST(ColumnarArrayTest, TestTimestampType) {
         ASSERT_EQ(ts, Timestamp(951866603001, 0)) << ts.GetMillisecond();
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::timestamp(arrow::TimeUnit::MICRO)),
                       R"([["1970-01-01T00:00:59"],["2000-02-29T23:23:23.001001",
           "1899-01-01T00:59:20"],["2033-05-18T03:33:20"]])")
@@ -252,7 +252,7 @@ TEST(ColumnarArrayTest, TestTimestampType) {
         ASSERT_EQ(ts, Timestamp(951866603001, 1000)) << ts.GetMillisecond();
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::timestamp(arrow::TimeUnit::NANO)),
                       R"([["1970-01-01T00:00:59"],["2000-02-29T23:23:23.001001001",
           "1899-01-01T00:59:20"],["2033-05-18T03:33:20"]])")
@@ -263,7 +263,7 @@ TEST(ColumnarArrayTest, TestTimestampType) {
         ASSERT_EQ(ts, Timestamp(951866603001, 1001)) << ts.GetMillisecond();
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::timestamp(arrow::TimeUnit::SECOND, timezone)),
                       R"([["1970-01-01T00:00:59"],["2000-02-29T23:23:23",
           "1899-01-01T00:59:20"],["2033-05-18T03:33:20"]])")
@@ -274,7 +274,7 @@ TEST(ColumnarArrayTest, TestTimestampType) {
         ASSERT_EQ(ts, Timestamp(951866603000, 0)) << ts.GetMillisecond();
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::timestamp(arrow::TimeUnit::MILLI, timezone)),
                       R"([["1970-01-01T00:00:59"],["2000-02-29T23:23:23.001",
           "1899-01-01T00:59:20"],["2033-05-18T03:33:20"]])")
@@ -285,7 +285,7 @@ TEST(ColumnarArrayTest, TestTimestampType) {
         ASSERT_EQ(ts, Timestamp(951866603001, 0)) << ts.GetMillisecond();
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::timestamp(arrow::TimeUnit::MICRO, timezone)),
                       R"([["1970-01-01T00:00:59"],["2000-02-29T23:23:23.001001",
           "1899-01-01T00:59:20"],["2033-05-18T03:33:20"]])")
@@ -296,7 +296,7 @@ TEST(ColumnarArrayTest, TestTimestampType) {
         ASSERT_EQ(ts, Timestamp(951866603001, 1000)) << ts.GetMillisecond();
     }
     {
-        auto f1 = arrow::ipc::internal::json::ArrayFromJSON(
+        auto f1 = arrow::json::ArrayFromJSONString(
                       arrow::list(arrow::timestamp(arrow::TimeUnit::NANO, timezone)),
                       R"([["1970-01-01T00:00:59"],["2000-02-29T23:23:23.001001001",
           "1899-01-01T00:59:20"],["2033-05-18T03:33:20"]])")

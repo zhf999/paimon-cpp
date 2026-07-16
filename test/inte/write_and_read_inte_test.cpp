@@ -25,7 +25,7 @@
 
 #include "arrow/api.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "arrow/type.h"
 #include "fmt/format.h"
 #include "gtest/gtest.h"
@@ -151,7 +151,7 @@ class WriteAndReadInteTest
         PAIMON_ASSIGN_OR_RAISE(auto batch_reader, table_read->CreateReader(plan->Splits()));
         PAIMON_ASSIGN_OR_RAISE(auto actual, ReadResultCollector::CollectResult(batch_reader.get()));
         PAIMON_ASSIGN_OR_RAISE_FROM_ARROW(
-            auto expected, arrow::ipc::internal::json::ArrayFromJSON(expected_type, expected_data));
+            auto expected, arrow::json::ArrayFromJSONString(expected_type, expected_data));
         return std::make_shared<arrow::ChunkedArray>(expected)->Equals(actual);
     }
 
@@ -173,7 +173,7 @@ class WriteAndReadInteTest
         PAIMON_ASSIGN_OR_RAISE(auto batch_reader, table_read->CreateReader(plan->Splits()));
         PAIMON_ASSIGN_OR_RAISE(auto actual, ReadResultCollector::CollectResult(batch_reader.get()));
         PAIMON_ASSIGN_OR_RAISE_FROM_ARROW(
-            auto expected, arrow::ipc::internal::json::ArrayFromJSON(expected_type, expected_data));
+            auto expected, arrow::json::ArrayFromJSONString(expected_type, expected_data));
         return std::make_shared<arrow::ChunkedArray>(expected)->Equals(actual);
     }
 
@@ -1217,7 +1217,7 @@ TEST_P(WriteAndReadInteTest, TestPKWithParquetPageIndexFilter) {
                                 arrow::field("_VALUE_KIND", arrow::int8()));
     auto expected_data_type = arrow::struct_(fields_with_row_kind);
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(expected_data_type, R"([
+        arrow::json::ArrayFromJSONString(expected_data_type, R"([
 [0, "Alice", "p1", 10, 1.1]
 ])")
             .ValueOrDie());
@@ -1325,7 +1325,7 @@ TEST_P(WriteAndReadInteTest, TestAppendWithParquetPageIndexFilter) {
                                 arrow::field("_VALUE_KIND", arrow::int8()));
     auto expected_data_type = arrow::struct_(fields_with_row_kind);
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(expected_data_type, R"([
+        arrow::json::ArrayFromJSONString(expected_data_type, R"([
 [0, "Alice", "p1", 10, 1.1]
 ])")
             .ValueOrDie());
@@ -1370,7 +1370,7 @@ TEST_P(WriteAndReadInteTest, TestAppendWithParquetMetadataCache) {
                                 arrow::field("_VALUE_KIND", arrow::int8()));
     auto expected_data_type = arrow::struct_(fields_with_row_kind);
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(expected_data_type, R"([
+        arrow::json::ArrayFromJSONString(expected_data_type, R"([
             [0, "banana", 2],
             [0, "dog", 1],
             [0, "lucy", 14],
@@ -1672,7 +1672,7 @@ TEST_P(WriteAndReadInteTest, TestAppendMapSharedShreddingWithPredicate) {
                                 arrow::field("_VALUE_KIND", arrow::int8()));
     auto expected_type = arrow::struct_(fields_with_row_kind);
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(expected_type, R"([
+        arrow::json::ArrayFromJSONString(expected_type, R"([
         [0, 12, [["c", 31], ["d", 41]]],
         [0, 21, [["e", 50], ["f", 60]]]
     ])")

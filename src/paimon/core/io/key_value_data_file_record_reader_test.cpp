@@ -22,7 +22,7 @@
 #include "arrow/api.h"
 #include "arrow/array/array_base.h"
 #include "arrow/array/array_nested.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/types/row_kind.h"
 #include "paimon/memory/memory_pool.h"
@@ -59,7 +59,7 @@ TEST_F(KeyValueDataFileRecordReaderTest, TestSimple) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3], fields[4], fields[5], fields[6]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 1, 10, 20, 30],
         [0, 1, 1, 2, 11, 21, 31],
         [1, 2, 2, 2, 12, 22, 32],
@@ -113,7 +113,7 @@ TEST_F(KeyValueDataFileRecordReaderTest, TestValueSchemaContainsPartialKey) {
         arrow::schema(arrow::FieldVector({fields[3], fields[4], fields[5], fields[6]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 1, 10, 20, 30],
         [0, 1, 1, 2, 11, 21, 31],
         [1, 2, 2, 2, 12, 22, 32],
@@ -167,7 +167,7 @@ TEST_F(KeyValueDataFileRecordReaderTest, TestWithSelectedBitmap) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3], fields[4], fields[5], fields[6]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 1, 10, 20, 30],
         [1, 0, 1, 2, 11, 21, 31],
         [2, 1, 2, 2, 12, 22, 32],
@@ -261,7 +261,7 @@ TEST_F(KeyValueDataFileRecordReaderTest, TestWithSelectedBitmapWithFilePos) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3], fields[4], fields[5], fields[6]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 1, 1, 10, 20, 30],
         [1, 0, 1, 2, 11, 21, 31],
         [2, 1, 2, 2, 12, 22, 32],
@@ -323,7 +323,7 @@ TEST_F(KeyValueDataFileRecordReaderTest, TestEmptyReader) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3], fields[4], fields[5], fields[6]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
     ])")
             .ValueOrDie());
     auto file_batch_reader =
@@ -353,7 +353,7 @@ TEST_F(KeyValueDataFileRecordReaderTest, TestInvalidSequenceNumerColumn) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3], fields[4], fields[5], fields[6]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         ["0", 0, 1, 1, 10, 20, 30]
     ])")
             .ValueOrDie());
@@ -382,7 +382,7 @@ TEST_F(KeyValueDataFileRecordReaderTest, TestInvalidValueKindColumn) {
         arrow::schema(arrow::FieldVector({fields[2], fields[3], fields[4], fields[5], fields[6]}));
     std::shared_ptr<arrow::DataType> src_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 100, 1, 1, 10, 20, 30]
     ])")
             .ValueOrDie());
@@ -414,7 +414,7 @@ TEST_F(KeyValueDataFileRecordReaderTest, TestKeyFieldAfterValueField) {
 
     // Data layout: [seq, kind, v0, v1, v2, k0, k1]
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(src_type, R"([
+        arrow::json::ArrayFromJSONString(src_type, R"([
         [0, 0, 10, 20, 30, 1, 1],
         [0, 1, 11, 21, 31, 1, 2],
         [1, 2, 12, 22, 32, 2, 2],

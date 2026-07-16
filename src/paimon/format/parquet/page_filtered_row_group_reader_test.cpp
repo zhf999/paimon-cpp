@@ -28,7 +28,6 @@
 #include "arrow/array/array_nested.h"
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
-#include "arrow/ipc/json_simple.h"
 #include "gtest/gtest.h"
 #include "paimon/common/utils/arrow/arrow_input_stream_adapter.h"
 #include "paimon/common/utils/arrow/mem_utils.h"

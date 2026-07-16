@@ -24,7 +24,7 @@
 #include "arrow/api.h"
 #include "arrow/array/array_base.h"
 #include "arrow/array/array_dict.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/data/binary_row.h"
 #include "paimon/common/data/data_define.h"
@@ -79,7 +79,7 @@ class LiteralConverterTest : public ::testing::Test {
 
 TEST_F(LiteralConverterTest, TestBooleanLiteral) {
     auto field_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::boolean(), R"([true, false, null])")
+        arrow::json::ArrayFromJSONString(arrow::boolean(), R"([true, false, null])")
             .ValueOrDie();
     CheckResult(field_array,
                 std::vector<Literal>({Literal(true), Literal(false), Literal(FieldType::BOOLEAN)}));
@@ -92,7 +92,7 @@ TEST_F(LiteralConverterTest, TestBooleanLiteral) {
 
 TEST_F(LiteralConverterTest, TestTinyIntLiteral) {
     auto field_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int8(), R"([4, 5, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int8(), R"([4, 5, null])").ValueOrDie();
     CheckResult(field_array, std::vector<Literal>({Literal(static_cast<int8_t>(4)),
                                                    Literal(static_cast<int8_t>(5)),
                                                    Literal(FieldType::TINYINT)}));
@@ -106,7 +106,7 @@ TEST_F(LiteralConverterTest, TestTinyIntLiteral) {
 }
 TEST_F(LiteralConverterTest, TestSmallIntLiteral) {
     auto field_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int16(), R"([45, 55, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int16(), R"([45, 55, null])").ValueOrDie();
     CheckResult(field_array, std::vector<Literal>({Literal(static_cast<int16_t>(45)),
                                                    Literal(static_cast<int16_t>(55)),
                                                    Literal(FieldType::SMALLINT)}));
@@ -121,7 +121,7 @@ TEST_F(LiteralConverterTest, TestSmallIntLiteral) {
 }
 TEST_F(LiteralConverterTest, TestIntLiteral) {
     auto field_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), R"([456, 567, null])")
+        arrow::json::ArrayFromJSONString(arrow::int32(), R"([456, 567, null])")
             .ValueOrDie();
     CheckResult(field_array,
                 std::vector<Literal>({Literal(456), Literal(567), Literal(FieldType::INT)}));
@@ -136,7 +136,7 @@ TEST_F(LiteralConverterTest, TestIntLiteral) {
 
 TEST_F(LiteralConverterTest, TestBigIntLiteral) {
     auto field_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int64(), R"([4, 5, null])").ValueOrDie();
+        arrow::json::ArrayFromJSONString(arrow::int64(), R"([4, 5, null])").ValueOrDie();
     CheckResult(field_array,
                 std::vector<Literal>({Literal(4l), Literal(5l), Literal(FieldType::BIGINT)}));
     CheckLiteralsFromString(FieldType::BIGINT, {"4", "5"},
@@ -150,7 +150,7 @@ TEST_F(LiteralConverterTest, TestBigIntLiteral) {
 
 TEST_F(LiteralConverterTest, TestFloatLiteral) {
     auto field_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::float32(), R"([4.0, 5.1, NaN, null])")
+        arrow::json::ArrayFromJSONString(arrow::float32(), R"([4.0, 5.1, NaN, null])")
             .ValueOrDie();
     CheckResult(field_array,
                 std::vector<Literal>(
@@ -167,7 +167,7 @@ TEST_F(LiteralConverterTest, TestFloatLiteral) {
 
 TEST_F(LiteralConverterTest, TestDoubleLiteral) {
     auto field_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::float64(), R"([4.05, 5.17, NaN, null])")
+        arrow::json::ArrayFromJSONString(arrow::float64(), R"([4.05, 5.17, NaN, null])")
             .ValueOrDie();
     CheckResult(field_array,
                 std::vector<Literal>({Literal(4.05), Literal(5.17), Literal(std::nan("")),
@@ -186,7 +186,7 @@ TEST_F(LiteralConverterTest, TestDoubleLiteral) {
 
 TEST_F(LiteralConverterTest, TestStringLiteral) {
     auto field_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(), R"(["apple", "苹果", null])")
+        arrow::json::ArrayFromJSONString(arrow::utf8(), R"(["apple", "苹果", null])")
             .ValueOrDie();
     std::string str = "苹果";
     CheckResult(field_array,
@@ -205,7 +205,7 @@ TEST_F(LiteralConverterTest, TestStringLiteral) {
 
 TEST_F(LiteralConverterTest, TestBinaryLiteral) {
     auto field_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::binary(), R"(["apple", "苹果", null])")
+        arrow::json::ArrayFromJSONString(arrow::binary(), R"(["apple", "苹果", null])")
             .ValueOrDie();
     std::string str = "苹果";
     CheckResult(field_array,
@@ -230,7 +230,7 @@ TEST_F(LiteralConverterTest, TestTimestampLiteral) {
           "1899-01-01T00:59:20.001001001", "2033-05-18T03:33:20.000000000",
           "2020-01-01T01:05:05.001", "2010-01-03T06:30:30.006163",
           "2010-01-04T07:35:35", "2008-12-28", "2012-01-01 01:02:03", null])";
-        auto field_array = arrow::ipc::internal::json::ArrayFromJSON(
+        auto field_array = arrow::json::ArrayFromJSONString(
                                arrow::timestamp(arrow::TimeUnit::NANO), timestamp_json)
                                .ValueOrDie();
         CheckResult(
@@ -266,7 +266,7 @@ TEST_F(LiteralConverterTest, TestTimestampLiteral) {
           "1899-01-01T00:59:20", "2033-05-18T03:33:20",
           "2020-01-01T01:05:05", "2010-01-03T06:30:30",
           "2010-01-04T07:35:35", "2008-12-28", "2012-01-01 01:02:03", null])";
-        auto field_array = arrow::ipc::internal::json::ArrayFromJSON(
+        auto field_array = arrow::json::ArrayFromJSONString(
                                arrow::timestamp(arrow::TimeUnit::SECOND), timestamp_json)
                                .ValueOrDie();
         CheckResult(
@@ -301,7 +301,7 @@ TEST_F(LiteralConverterTest, TestTimestampLiteral) {
           "1899-01-01T00:59:20.001", "2033-05-18T03:33:20.001",
           "2020-01-01T01:05:05.001", "2010-01-03T06:30:30.001",
           "2010-01-04T07:35:35.001", "2008-12-28", "2012-01-01 01:02:03.001", null])";
-        auto field_array = arrow::ipc::internal::json::ArrayFromJSON(
+        auto field_array = arrow::json::ArrayFromJSONString(
                                arrow::timestamp(arrow::TimeUnit::MILLI), timestamp_json)
                                .ValueOrDie();
         CheckResult(
@@ -336,7 +336,7 @@ TEST_F(LiteralConverterTest, TestTimestampLiteral) {
           "1899-01-01T00:59:20.001001", "2033-05-18T03:33:20.001001",
           "2020-01-01T01:05:05.001001", "2010-01-03T06:30:30.001001",
           "2010-01-04T07:35:35.001001", "2008-12-28", "2012-01-01 01:02:03.001001", null])";
-        auto field_array = arrow::ipc::internal::json::ArrayFromJSON(
+        auto field_array = arrow::json::ArrayFromJSONString(
                                arrow::timestamp(arrow::TimeUnit::MICRO), timestamp_json)
                                .ValueOrDie();
         CheckResult(
@@ -370,7 +370,7 @@ TEST_F(LiteralConverterTest, TestTimestampLiteral) {
 
 TEST_F(LiteralConverterTest, TestDecimalLiteral) {
     auto field_array =
-        arrow::ipc::internal::json::ArrayFromJSON(
+        arrow::json::ArrayFromJSONString(
             arrow::decimal128(21, 3),
             R"(["-123456789987654321.234", "123456789987654321.012", "0.000", "123.456", "-123.456", null])")
             .ValueOrDie();
@@ -395,7 +395,7 @@ TEST_F(LiteralConverterTest, TestDecimalLiteral) {
 
 TEST_F(LiteralConverterTest, TestDateLiteral) {
     auto field_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::date32(), R"([0, 4, -5, null])")
+        arrow::json::ArrayFromJSONString(arrow::date32(), R"([0, 4, -5, null])")
             .ValueOrDie();
     CheckResult(field_array,
                 std::vector<Literal>({Literal(FieldType::DATE, 0l), Literal(FieldType::DATE, 4l),
@@ -412,7 +412,7 @@ TEST_F(LiteralConverterTest, TestDateLiteral) {
 
 TEST_F(LiteralConverterTest, TestInvalidType) {
     auto field_array =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::large_utf8(), R"(["apple", "苹果", null])")
+        arrow::json::ArrayFromJSONString(arrow::large_utf8(), R"(["apple", "苹果", null])")
             .ValueOrDie();
     ASSERT_NOK_WITH_MSG(
         LiteralConverter::ConvertLiteralsFromArray(*field_array, /*own_data=*/false),
@@ -420,11 +420,11 @@ TEST_F(LiteralConverterTest, TestInvalidType) {
 }
 
 TEST_F(LiteralConverterTest, TestDictType) {
-    auto dict = arrow::ipc::internal::json::ArrayFromJSON(arrow::utf8(), R"(["foo", "bar", "baz"])")
+    auto dict = arrow::json::ArrayFromJSONString(arrow::utf8(), R"(["foo", "bar", "baz"])")
                     .ValueOrDie();
     auto dict_type = arrow::dictionary(arrow::int32(), arrow::utf8());
     auto indices =
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::int32(), "[1, 2, 0, 2, 0, null]")
+        arrow::json::ArrayFromJSONString(arrow::int32(), "[1, 2, 0, 2, 0, null]")
             .ValueOrDie();
     std::shared_ptr<arrow::DictionaryArray> field_array =
         std::make_shared<arrow::DictionaryArray>(dict_type, indices, dict);

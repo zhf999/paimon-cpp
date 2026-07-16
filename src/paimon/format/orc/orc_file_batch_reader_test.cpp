@@ -27,6 +27,7 @@
 #include "arrow/c/abi.h"
 #include "arrow/c/bridge.h"
 #include "arrow/ipc/api.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/common/types/data_field.h"
 #include "paimon/common/utils/arrow/arrow_utils.h"
@@ -69,7 +70,7 @@ class OrcFileBatchReaderTest : public ::testing::Test,
             arrow::field("f2", arrow::int32()), arrow::field("f3", arrow::float64())};
 
         struct_array_ = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         ["Bob", 10, 0, 12.1], ["Emily", 10, 0, 13.1], ["Tony", 10, 0, 14.1], ["Emily", 10, 0, 15.1],
         ["Bob", 10, 0, 12.1], ["Alex", 10, 0, 16.1], ["David", 10, 0, 17.1], ["Lily", 10, 0, 17.1]
     ])")
@@ -219,7 +220,7 @@ TEST_F(OrcFileBatchReaderTest, TestReadBinaryWrittenFromBinaryAndLargeBinary) {
         auto write_field = arrow::field("f0", write_type);
         auto write_schema = arrow::schema({write_field});
         auto write_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({write_field}), data_json)
+            arrow::json::ArrayFromJSONString(arrow::struct_({write_field}), data_json)
                 .ValueOrDie());
 
         std::string file_path = dir->Str() + "/" + file_name;
@@ -235,7 +236,7 @@ TEST_F(OrcFileBatchReaderTest, TestReadBinaryWrittenFromBinaryAndLargeBinary) {
         ASSERT_TRUE(file_schema->Equals(read_schema));
 
         auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({read_field}), data_json)
+            arrow::json::ArrayFromJSONString(arrow::struct_({read_field}), data_json)
                 .ValueOrDie());
         auto expected_chunked_array = std::make_shared<arrow::ChunkedArray>(expected_array);
         ASSERT_OK_AND_ASSIGN(auto result_array, paimon::test::ReadResultCollector::CollectResult(
@@ -585,14 +586,13 @@ TEST_P(OrcFileBatchReaderTest, TestNextBatchWithNullValue) {
         PrepareOrcFileBatchReader(file_name, &read_schema, batch_size_, natural_read_size);
     ASSERT_OK_AND_ASSIGN(auto result_array,
                          paimon::test::ReadResultCollector::CollectResult(orc_batch_reader.get()));
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
     std::string json = R"([
       ["Paul", 20, 1, null]
     ])";
     auto array_status =
-        arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {json}, &expected_array);
+        arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {json});
     ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(expected_array));
+    ASSERT_TRUE(result_array->Equals(array_status.ValueOrDie()));
 }
 
 TEST_F(OrcFileBatchReaderTest, TestNextBatchWithDictionary) {
@@ -604,7 +604,7 @@ TEST_F(OrcFileBatchReaderTest, TestNextBatchWithDictionary) {
 
     arrow::FieldVector fields = {f0, f1, f2};
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
         [["a", "a", "b"], [["a", "q"], ["b", "w"]],             [10, "q", "a"]],
         [["a", "c"],      [["a", "e"], ["b", "r"], ["c", "e"]], [20, "w", "a"]],
         [["a", "d"],      [["d", "r"], ["e", "t"]],             [null, "e", "b"]],
@@ -651,17 +651,16 @@ TEST_P(OrcFileBatchReaderTest, TestComplexType) {
     ASSERT_OK_AND_ASSIGN(auto result_array,
                          paimon::test::ReadResultCollector::CollectResult(orc_batch_reader.get()));
     std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto array_status = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [10, 1, 1234,  "2033-05-18 03:33:20.0",         "123456789987654321.45678", "add"],
         [10, 1, 19909, "2033-05-18 03:33:20.000001001", "12.30000", "cat"],
         [10, 1, 0,     "2008-12-28 00:00:00.000123456", null, "dad"],
         [10, 1, 100,   "2008-12-28 00:00:00.00012345",  "-123.45000", "eat"],
         [10, 1, null,  "1899-01-01 00:59:20.001001001", "0.00000", "fat"],
         [10, 1, 20006, "2024-10-10 10:10:10.1001001",   "1728551410100.10010", null]
-    ])"},
-                                                                         &expected_array);
+    ])"});
     ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(*expected_array));
+    ASSERT_TRUE(result_array->Equals(array_status.ValueOrDie()));
 }
 
 TEST_F(OrcFileBatchReaderTest, TestGetFileSchemaWithFieldId) {
@@ -744,7 +743,7 @@ TEST_F(OrcFileBatchReaderTest, TestDictionaryWithMultiStripe) {
     arrow::FieldVector fields = {arrow::field("f0", arrow::utf8())};
     auto arrow_type = arrow::struct_(fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_type, R"([
+        arrow::json::ArrayFromJSONString(arrow_type, R"([
         ["abc"],
         ["abc"],
         ["abc"],
@@ -794,7 +793,7 @@ TEST_F(OrcFileBatchReaderTest, TestReadNoField) {
     arrow::FieldVector fields;
     auto arrow_type = arrow::struct_(fields);
     auto expected_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_type, R"([
+        arrow::json::ArrayFromJSONString(arrow_type, R"([
 [],
 [],
 []
@@ -831,7 +830,7 @@ TEST_P(OrcFileBatchReaderTest, TestTimestampType) {
     };
 
     auto array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(fields), R"([
 ["1970-01-01 00:00:01", "1970-01-01 00:00:00.001", "1970-01-01 00:00:00.000001", "1970-01-01 00:00:00.000000001", "1970-01-01 00:00:02", "1970-01-01 00:00:00.002", "1970-01-01 00:00:00.000002", "1970-01-01 00:00:00.000000002"],
 ["1970-01-01 00:00:03", "1970-01-01 00:00:00.003", null, "1970-01-01 00:00:00.000000003", "1970-01-01 00:00:04", "1970-01-01 00:00:00.004", "1970-01-01 00:00:00.000004", "1970-01-01 00:00:00.000000004"],
 ["1970-01-01 00:00:05", "1970-01-01 00:00:00.005", null, null, "1970-01-01 00:00:06", null, "1970-01-01 00:00:00.000006", null]
@@ -903,7 +902,7 @@ TEST_F(OrcFileBatchReaderTest, TestNestedFieldProjection) {
     arrow::FieldVector write_fields = {col1, col2};
     auto write_schema = arrow::schema(write_fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(write_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(write_fields), R"([
         [[10, 1.1, "aaa"], 100],
         [[20, 2.2, "bbb"], 200],
         [[30, 3.3, "ccc"], 300],
@@ -928,7 +927,7 @@ TEST_F(OrcFileBatchReaderTest, TestNestedFieldProjection) {
                                                     orc_batch_reader.get()));
 
         auto expected = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({read_col1}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({read_col1}), R"([
             [[10, "aaa"]],
             [[20, "bbb"]],
             [[30, "ccc"]],
@@ -952,7 +951,7 @@ TEST_F(OrcFileBatchReaderTest, TestNestedFieldProjection) {
                                                     orc_batch_reader.get()));
 
         auto expected = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({read_col1, col2}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({read_col1, col2}), R"([
             [[1.1], 100],
             [[2.2], 200],
             [[3.3], 300],
@@ -976,7 +975,7 @@ TEST_F(OrcFileBatchReaderTest, TestNestedFieldProjection) {
                                                     orc_batch_reader.get()));
 
         auto expected = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({read_col1}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({read_col1}), R"([
             [[10]],
             [[20]],
             [[30]],
@@ -1003,7 +1002,7 @@ TEST_F(OrcFileBatchReaderTest, TestDeepNestedFieldProjection) {
     arrow::FieldVector write_fields = {field_a, field_f};
     auto write_schema = arrow::schema(write_fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(write_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(write_fields), R"([
         [[[1, "x"], 10.0], 100],
         [[[2, "y"], 20.0], 200],
         [null, 300]
@@ -1027,7 +1026,7 @@ TEST_F(OrcFileBatchReaderTest, TestDeepNestedFieldProjection) {
                                                     orc_batch_reader.get()));
 
         auto expected = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({read_a}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({read_a}), R"([
             [[[1]]],
             [[[2]]],
             [null]
@@ -1051,7 +1050,7 @@ TEST_F(OrcFileBatchReaderTest, TestNestedFieldProjectionWithListAndMap) {
     arrow::FieldVector write_fields = {col1, col2};
     auto write_schema = arrow::schema(write_fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(write_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(write_fields), R"([
         [[10, [1, 2, 3], [["a", 1], ["b", 2]]], "hello"],
         [[20, [4, 5],    [["c", 3]]],            "world"],
         [[30, null,      null],                   null]
@@ -1074,7 +1073,7 @@ TEST_F(OrcFileBatchReaderTest, TestNestedFieldProjectionWithListAndMap) {
                                                     orc_batch_reader.get()));
 
         auto expected = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({read_col1}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({read_col1}), R"([
             [[[1, 2, 3]]],
             [[[4, 5]]],
             [[null]]
@@ -1096,7 +1095,7 @@ TEST_F(OrcFileBatchReaderTest, TestNestedFieldProjectionWithListAndMap) {
                                                     orc_batch_reader.get()));
 
         auto expected = std::dynamic_pointer_cast<arrow::StructArray>(
-            arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_({read_col1, col2}), R"([
+            arrow::json::ArrayFromJSONString(arrow::struct_({read_col1, col2}), R"([
             [[10, [["a", 1], ["b", 2]]], "hello"],
             [[20, [["c", 3]]],            "world"],
             [[30, null],                   null]
@@ -1120,7 +1119,7 @@ TEST_F(OrcFileBatchReaderTest, TestListStructPartialProjection) {
     arrow::FieldVector write_fields = {col1};
     auto write_schema = arrow::schema(write_fields);
     auto src_array = std::dynamic_pointer_cast<arrow::StructArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow::struct_(write_fields), R"([
+        arrow::json::ArrayFromJSONString(arrow::struct_(write_fields), R"([
         [[[1, 1.1], [2, 2.2]]],
         [[[3, 3.3]]],
         [[null]],
@@ -1172,7 +1171,7 @@ TEST_F(OrcFileBatchReaderTest, TestAddMetadataPerFieldMetadata) {
                                                  /*batch_size=*/10, pool_));
 
     // Write one batch of data.
-    auto data = arrow::ipc::internal::json::ArrayFromJSON(
+    auto data = arrow::json::ArrayFromJSONString(
                     arrow::struct_(write_schema->fields()),
                     R"([[1, "alice", 95.5], [2, "bob", 88.0], [3, "charlie", 72.3]])")
                     .ValueOrDie();

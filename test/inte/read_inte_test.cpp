@@ -30,7 +30,7 @@
 #include "arrow/api.h"
 #include "arrow/array/array_base.h"
 #include "arrow/c/abi.h"
-#include "arrow/ipc/json_simple.h"
+#include "arrow/json/from_string.h"
 #include "gtest/gtest.h"
 #include "paimon/catalog/catalog.h"
 #include "paimon/catalog/identifier.h"
@@ -295,7 +295,7 @@ void AssertStructArrayEqualsJson(const std::shared_ptr<arrow::StructArray>& actu
                                  const std::string& expected_json) {
     ASSERT_TRUE(actual);
     auto expected =
-        arrow::ipc::internal::json::ArrayFromJSON(actual->type(), expected_json).ValueOrDie();
+        arrow::json::ArrayFromJSONString(actual->type(), expected_json).ValueOrDie();
     ASSERT_TRUE(actual->Equals(expected))
         << "expected: " << expected->ToString() << "\nactual: " << actual->ToString();
 }
@@ -374,13 +374,12 @@ TEST_P(ReadInteTest, TestAppendSimple) {
             DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
         std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
       [0, "Lucy", 20, 1, 14.1],
       [0, "Paul", 20, 1, null]
-    ])"},
-                                                                             &expected_array);
-        ASSERT_TRUE(array_status.ok());
-        ASSERT_TRUE(result_array->Equals(expected_array));
+    ])"});
+        ASSERT_TRUE(expected_array_result.ok());
+        ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie()));
 
         // test metrics
         auto read_metrics = batch_reader->GetReaderMetrics();
@@ -532,15 +531,14 @@ TEST_P(ReadInteTest, TestReadOnlyPartitionField) {
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
     std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, "20240725"],
         [0, "20240725"],
         [0, "20240726"],
         [0, "20240726"]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(expected_array)) << result_array->ToString();
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST(SystemTableReadInteTest, TestReadOptionsSystemTable) {
@@ -1418,15 +1416,13 @@ TEST_P(ReadInteTest, TestAppendReadWithMultipleBuckets) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, 11.1, "Alice", 10], [0, 12.1, "Bob", 10],  [0, 13.1, "Emily", 10], [0, 14.1, "Tony",
         10], [0, 15.1, "Emily", 10], [0, 12.1, "Bob", 10],  [0, 16.1, "Alex", 10],  [0, 17.1,
         "David", 10], [0, 17.1, "Lily", 10],  [0, 14.1, "Lucy", 20], [0, null, "Paul", 20]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(*expected_array));
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie()));
 }
 
 TEST_P(ReadInteTest, TestAppendReadWithPredicate) {
@@ -1501,14 +1497,12 @@ TEST_P(ReadInteTest, TestAppendReadWithPredicate) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, 15.1, "Emily", 10], [0, 16.1, "Alex", 10], [0, 17.1, "David", 10],
         [0, 17.1, "Lily", 10],  [0, 14.1, "Lucy", 20], [0, null, "Paul", 20]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(*expected_array));
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie()));
     batch_reader->Close();
     if (param.file_format == "orc") {
         // test metrics
@@ -1594,17 +1588,15 @@ TEST_P(ReadInteTest, TestAppendReadWithComplexTypePredicate) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, "add", 1, "2033-05-18 03:33:20.0",         1234,  "123456789987654321.45678"],
         [0, "cat", 1, "2033-05-18 03:33:20.000001001", 19909, "12.30000"],
         [0, "fat", 1, "1899-01-01 00:59:20.001001001", null,  "0.00000"],
         [0, "bad", 1, "1899-01-01 00:59:20.001001001", -1234, "-123456789987654321.45678"]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
     ASSERT_TRUE(result_array);
-    ASSERT_TRUE(result_array->Equals(*expected_array)) << result_array->ToString();
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST_P(ReadInteTest, TestAppendReadWithPredicateOnlyPushdown) {
@@ -1676,14 +1668,12 @@ TEST_P(ReadInteTest, TestAppendReadWithPredicateOnlyPushdown) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, 15.1, "Emily", 10], [0, 12.1, "Bob", 10],  [0, 16.1, "Alex", 10],
         [0, 17.1, "David", 10], [0, 17.1, "Lily", 10],  [0, null, "Paul", 20]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(*expected_array)) << result_array->ToString();
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST_P(ReadInteTest, TestAppendReadWithPredicateAllFiltered) {
@@ -1771,12 +1761,10 @@ TEST_P(ReadInteTest, TestAppendReadIOException) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, 11.1, "Alice", 10], [0, 14.1, "Lucy", 20], [0, null, "Paul", 20]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
 
     bool run_complete = false;
     auto io_hook = IOHook::GetInstance();
@@ -1803,7 +1791,7 @@ TEST_P(ReadInteTest, TestAppendReadIOException) {
         CHECK_HOOK_STATUS(result.status(), i);
         auto result_array = result.value();
         ASSERT_TRUE(result_array);
-        ASSERT_TRUE(result_array->Equals(*expected_array));
+        ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie()));
         run_complete = true;
         break;
     }
@@ -1856,7 +1844,7 @@ TEST_P(ReadInteTest, TestPkTableWithDeletionVectorSimple) {
 
     ASSERT_OK_AND_ASSIGN(auto read_result, ReadResultCollector::CollectResult(batch_reader.get()));
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type, R"([
        [0, "Alex", 10, 0, 16.1], [0, "Bob", 10, 0, 12.1],
        [0, "David", 10, 0, 17.1], [0, "Emily", 10, 0, 13.1],
        [0, "Whether I shall turn out to be the hero of my own life.", 10, 0, 19.1]
@@ -1921,7 +1909,7 @@ TEST_P(ReadInteTest, TestPkTableWithDeletionVector) {
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type, R"([
        [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 10, 1, 11.0],
        [0, "Whether I shall turn out to be the hero of my own life.", 10, 1, 19.1], [0, "Alice", 10, 1, 19.1]
    ])")
@@ -2008,7 +1996,7 @@ TEST_P(ReadInteTest, TestPkTableWithSnapshot6) {
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type, R"([
        [0, "Whether I shall turn out to be the hero of my own life.", 10, 1, 19.1],
        [0, "Alice", 10, 1, 19.1], [0, "Alex", 10, 0, 16.1],
        [0, "David", 10, 0, 17.1], [0, "Paul", 20, 1, 18.1]
@@ -2081,7 +2069,7 @@ TEST_P(ReadInteTest, TestPkTableWithSnapshot8) {
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
     auto expected = std::make_shared<arrow::ChunkedArray>(
-        arrow::ipc::internal::json::ArrayFromJSON(arrow_data_type, R"([
+        arrow::json::ArrayFromJSONString(arrow_data_type, R"([
        [0, "Alex", 16.1, 10], [0, "Bob", 12.1, 10], [0, "David", 17.1, 10], [0, "Emily", 13.1, 10], [0, "Alice", 21.1, 10],
        [0, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 11.0, 10],
        [0, "Whether I shall turn out to be the hero of my own life.", 19.1, 10], [0, "Lucy", 14.1, 20], [0, "Paul", 18.1, 20]
@@ -2151,8 +2139,7 @@ TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolution) {
         std::shared_ptr<arrow::DataType> arrow_data_type =
             DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-        std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, 0, 1, 16, 13, null, 15, null],
         [0, 0, 1, 26, 23, null, 25, null],
         [0, 0, 1, 36, 33, null, 35, null],
@@ -2163,10 +2150,9 @@ TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolution) {
         [0, 1, 1, 106, 103, 557, 105, 658],
         [0, 1, 1, 46, 43, null, 45, null],
         [0, 1, 1, 56, 53, null, 55, null]
-    ])"},
-                                                                             &expected_array);
-        ASSERT_TRUE(array_status.ok());
-        ASSERT_TRUE(result_array->Equals(*expected_array));
+    ])"});
+        ASSERT_TRUE(expected_array_result.ok()) << expected_array_result.status().ToString();
+        ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie()));
     };
 
     // check without specific table schema
@@ -2247,15 +2233,13 @@ TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolutionWithPredicateFilter) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, 65, 66, 1, 517, 0,  63],
         [0, 75, 76, 1, 527, 0, 73],
         [0, 85, 86, 1, 537, 0, 83]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok()) << array_status.ToString();
-    ASSERT_TRUE(result_array->Equals(*expected_array)) << result_array->ToString();
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok()) << expected_array_result.status().ToString();
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolutionWithPredicateOnlyPushDown) {
@@ -2324,8 +2308,7 @@ TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolutionWithPredicateOnlyPushDown)
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, 15, 16, 1, null, 0,  13],
         [0, 25, 26, 1, null, 0, 23],
         [0, 35, 36, 1, null, 0, 33],
@@ -2334,10 +2317,9 @@ TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolutionWithPredicateOnlyPushDown)
         [0, 85, 86, 1, 537, 0, 83],
         [0, 45, 46, 1, null, 1, 43],
         [0, 55, 56, 1, null, 1, 53]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok()) << array_status.ToString();
-    ASSERT_TRUE(result_array->Equals(*expected_array)) << result_array->ToString();
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok()) << expected_array_result.status().ToString();
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST_P(ReadInteTest, TestPkReadSnapshot5WithSchemaEvolution) {
@@ -2411,8 +2393,7 @@ TEST_P(ReadInteTest, TestPkReadSnapshot5WithSchemaEvolution) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
       [0, 1, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 2, 4, null, 6, 0, null],
       [0, 1, "Alice", 12, 94, null, 96, 0, null],
       [0, 1, "Bob", 22, 24, null, 26, 1, null],
@@ -2420,10 +2401,9 @@ TEST_P(ReadInteTest, TestPkReadSnapshot5WithSchemaEvolution) {
       [0, 1, "Alex", 52, 54, null, 56, 1, null],
       [0, 1, "David", 62, 64, null, 66, 1, null],
       [0, 1, "Whether I shall turn out to be the hero of my own life.", 72, 74, null, 76, 1, null]
-])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(*expected_array));
+])"});
+    ASSERT_TRUE(expected_array_result.ok()) << expected_array_result.status().ToString();
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST_P(ReadInteTest, TestPkReadSnapshot6WithSchemaEvolution) {
@@ -2487,8 +2467,7 @@ TEST_P(ReadInteTest, TestPkReadSnapshot6WithSchemaEvolution) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
       [0, 1, "Bob", 22, 24, null, 26, 1, null],
       [0, 1, "Emily", 32, 34, null, 36, 1, null],
       [0, 1, "David", 62, 64, null, 66, 1, null],
@@ -2497,10 +2476,9 @@ TEST_P(ReadInteTest, TestPkReadSnapshot6WithSchemaEvolution) {
       [0, 1, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 2, 4, null, 6, 0, null],
       [0, 1, "Alice", 12, 94, null, 96, 0, null],
       [0, 1, "Paul", 502, 504, 508, 506, 0, 509]
-])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(*expected_array));
+])"});
+    ASSERT_TRUE(expected_array_result.ok()) << expected_array_result.status().ToString();
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST_P(ReadInteTest, TestPkReadSnapshot6WithSchemaEvolutionWithPredicateOnlyPushDown) {
@@ -2572,8 +2550,7 @@ TEST_P(ReadInteTest, TestPkReadSnapshot6WithSchemaEvolutionWithPredicateOnlyPush
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
       [0, 1, "Bob", 22, 24, null, 26, 1, null],
       [0, 1, "Emily", 32, 34, null, 36, 1, null],
       [0, 1, "David", 62, 64, null, 66, 1, null],
@@ -2581,10 +2558,9 @@ TEST_P(ReadInteTest, TestPkReadSnapshot6WithSchemaEvolutionWithPredicateOnlyPush
       [0, 1, "Two roads diverged in a wood, and I took the one less traveled by, And that has made all the difference.", 2, 4, null, 6, 0, null],
       [0, 1, "Alice", 12, 94, null, 96, 0, null],
       [0, 1, "Paul", 502, 504, 508, 506, 0, 509]
-])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(*expected_array));
+])"});
+    ASSERT_TRUE(expected_array_result.ok()) << expected_array_result.status().ToString();
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST_P(ReadInteTest, TestPkReadSnapshot6WithSchemaEvolutionWithPredicateFilter) {
@@ -2657,13 +2633,11 @@ TEST_P(ReadInteTest, TestPkReadSnapshot6WithSchemaEvolutionWithPredicateFilter) 
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
       [0, 1, "Paul", 502, 504, 508, 506, 0, 509]
-])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(*expected_array)) << result_array->ToString();
+])"});
+    ASSERT_TRUE(expected_array_result.ok()) << expected_array_result.status().ToString();
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolutionWithBuildInFieldId) {
@@ -2725,8 +2699,7 @@ TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolutionWithBuildInFieldId) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, 0, 1, 16, 13, null, 15, null],
         [0, 0, 1, 26, 23, null, 25, null],
         [0, 0, 1, 36, 33, null, 35, null],
@@ -2737,10 +2710,9 @@ TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolutionWithBuildInFieldId) {
         [0, 1, 1, 56, 53, null, 55, null],
         [0, 1, 1, 96, 93, 547, 95, 648],
         [0, 1, 1, 106, 103, 557, 105, 658]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(*expected_array));
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok()) << expected_array_result.status().ToString();
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST_P(ReadInteTest, TestAppendReadNestedType) {
@@ -2789,15 +2761,13 @@ TEST_P(ReadInteTest, TestAppendReadNestedType) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, [[0, 0]], [0.1, 0.2], [true, 2], "1970-01-01 00:02:03.123123", 2456, "0.22"],
         [0, [[127, 32767], [-128, -32768]], [1.1, 1.2], [false, 2222], "1970-01-01 00:02:03.123123", 245, "0.12"],
         [0, [[1, 64], [2, 32]], [2.2, 3.2], [true, 2], "1970-01-01 00:00:00.0", 24, null]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(*expected_array)) << result_array->ToString();
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolutionWithCast) {
@@ -2856,8 +2826,7 @@ TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolutionWithCast) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, "1970-01-05 00:00:00",            0, 1, 100, "2024-11-26 06:38:56.001000001", "0.020",    true,  null],
         [0, "1969-11-18 00:00:00",            0, 1, 110, "2024-11-26 06:38:56.011000011", "11.120",   true,  null],
         [0, "1971-03-21 00:00:00",            0, 1, 120, "2024-11-26 06:38:56.021000021", "22.220",   false, null],
@@ -2868,10 +2837,9 @@ TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolutionWithCast) {
         [0, "2091-09-07 00:00:00",            1, 1, 140, "2024-11-26 06:38:56.041000041", "444.420",  true,  null],
         [0, "2024-11-26 06:38:56.084000084",  1, 1, 180, "2024-11-26 15:29:01",           "8.032",    true,  -86],
         [0, "2024-11-26 06:38:56.094000094",  1, 1, 190, "I'm strange",                   "-999.420", false, 96]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(*expected_array));
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolutionWithCastWithPredicatePushDown) {
@@ -2940,8 +2908,7 @@ TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolutionWithCastWithPredicatePushD
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, "1970-01-05 00:00:00",            0, 1, 100, "2024-11-26 06:38:56.001000001", "0.020",    true,  null],
         [0, "1969-11-18 00:00:00",            0, 1, 110, "2024-11-26 06:38:56.011000011", "11.120",   true,  null],
         [0, "1971-03-21 00:00:00",            0, 1, 120, "2024-11-26 06:38:56.021000021", "22.220",   false, null],
@@ -2950,10 +2917,9 @@ TEST_P(ReadInteTest, TestAppendReadWithSchemaEvolutionWithCastWithPredicatePushD
         [0, "2024-11-26 06:38:56.074000074",  0, 1, 170, "2024-11-26 15:28:51",           "-77.022",  true,  76],
         [0, "1957-11-01 00:00:00",            1, 1, 130, "2024-11-26 06:38:56.031000031", "333.320",  false, null],
         [0, "2091-09-07 00:00:00",            1, 1, 140, "2024-11-26 06:38:56.041000041", "444.420",  true,  null]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(*expected_array)) << result_array->ToString();
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST_P(ReadInteTest, TestReadWithPKFallBackBranch) {
@@ -2996,16 +2962,14 @@ TEST_P(ReadInteTest, TestReadWithPKFallBackBranch) {
         std::shared_ptr<arrow::DataType> arrow_data_type =
             DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-        std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, "20240725", "apple", 5],
         [0, "20240725", "banana", 7],
         [0, "20240726", "cherry", 3],
         [0, "20240726", "pear", 6]
-    ])"},
-                                                                             &expected_array);
-        ASSERT_TRUE(array_status.ok());
-        ASSERT_TRUE(result_array->Equals(*expected_array));
+    ])"});
+        ASSERT_TRUE(expected_array_result.ok()) << expected_array_result.status().ToString();
+        ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
     };
 
     // check without specific table schema
@@ -3051,16 +3015,14 @@ TEST_P(ReadInteTest, TestReadWithAppendFallBackBranch) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, 1, 110, null],
         [0, 1, 120, 1200],
         [0, 2, 210, null],
         [0, 2, 220, 2200]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(*expected_array));
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok()) << expected_array_result.status().ToString();
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST_P(ReadInteTest, TestFallBackBranchStreamRead) {
@@ -3090,14 +3052,12 @@ TEST_P(ReadInteTest, TestFallBackBranchStreamRead) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
       [0, "20240725", "apple", 5],
       [0, "20240725", "banana", 7]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(expected_array));
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie())) << result_array->ToString();
 }
 
 TEST_P(ReadInteTest, TestReadWithPKRtBranch) {
@@ -3140,16 +3100,14 @@ TEST_P(ReadInteTest, TestReadWithPKRtBranch) {
         std::shared_ptr<arrow::DataType> arrow_data_type =
             DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-        std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, "20240726", "cherry", 3],
         [0, "20240726", "pear", 6],
         [0, "20240725", "apple", 4],
         [0, "20240725", "peach", 10]
-    ])"},
-                                                                             &expected_array);
-        ASSERT_TRUE(array_status.ok());
-        ASSERT_TRUE(result_array->Equals(*expected_array));
+    ])"});
+        ASSERT_TRUE(expected_array_result.ok());
+        ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie()));
     };
 
     // check without specific table schema
@@ -3197,14 +3155,12 @@ TEST_P(ReadInteTest, TestReadWithAppendPtBranch) {
         std::shared_ptr<arrow::DataType> arrow_data_type =
             DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-        std::shared_ptr<arrow::ChunkedArray> expected_array;
-        auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+        auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
         [0, 2, 210, null],
         [0, 2, 220, 2200]
-    ])"},
-                                                                             &expected_array);
-        ASSERT_TRUE(array_status.ok());
-        ASSERT_TRUE(result_array->Equals(*expected_array));
+    ])"});
+        ASSERT_TRUE(expected_array_result.ok());
+        ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie()));
     };
 
     // check without specific table schema
@@ -3342,14 +3298,12 @@ TEST_P(ReadInteTest, TestSpecificFs) {
     std::shared_ptr<arrow::DataType> arrow_data_type =
         DataField::ConvertDataFieldsToArrowStructType(fields_with_row_kind);
 
-    std::shared_ptr<arrow::ChunkedArray> expected_array;
-    auto array_status = arrow::ipc::internal::json::ChunkedArrayFromJSON(arrow_data_type, {R"([
+    auto expected_array_result = arrow::json::ChunkedArrayFromJSONString(arrow_data_type, {R"([
       [0, "Lucy", 20, 1, 14.1],
       [0, "Paul", 20, 1, null]
-    ])"},
-                                                                         &expected_array);
-    ASSERT_TRUE(array_status.ok());
-    ASSERT_TRUE(result_array->Equals(expected_array));
+    ])"});
+    ASSERT_TRUE(expected_array_result.ok());
+    ASSERT_TRUE(result_array->Equals(expected_array_result.ValueOrDie()));
     ASSERT_GT(io_count, 0);
 }
 
