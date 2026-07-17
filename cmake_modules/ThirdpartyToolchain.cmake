@@ -89,6 +89,32 @@ else()
     endif()
 endif()
 
+if(DEFINED ENV{PAIMON_ARROW_BOOST_URL})
+    set(ARROW_BOOST_SOURCE_URL "$ENV{PAIMON_ARROW_BOOST_URL}")
+else()
+    if(EXISTS "${THIRDPARTY_DIR}/${PAIMON_ARROW_BOOST_PKG_NAME}")
+        set_urls(ARROW_BOOST_SOURCE_URL
+                 "${THIRDPARTY_DIR}/${PAIMON_ARROW_BOOST_PKG_NAME}")
+    else()
+        set_urls(ARROW_BOOST_SOURCE_URL
+                 "${THIRDPARTY_MIRROR_URL}https://github.com/boostorg/boost/releases/download/boost-${PAIMON_ARROW_BOOST_BUILD_VERSION}/boost-${PAIMON_ARROW_BOOST_BUILD_VERSION}-cmake.tar.gz"
+        )
+    endif()
+endif()
+
+if(DEFINED ENV{PAIMON_ARROW_THRIFT_URL})
+    set(ARROW_THRIFT_SOURCE_URL "$ENV{PAIMON_ARROW_THRIFT_URL}")
+else()
+    if(EXISTS "${THIRDPARTY_DIR}/${PAIMON_ARROW_THRIFT_PKG_NAME}")
+        set_urls(ARROW_THRIFT_SOURCE_URL
+                 "${THIRDPARTY_DIR}/${PAIMON_ARROW_THRIFT_PKG_NAME}")
+    else()
+        set_urls(ARROW_THRIFT_SOURCE_URL
+                 "${THIRDPARTY_MIRROR_URL}https://www.apache.org/dyn/closer.lua/thrift/${PAIMON_ARROW_THRIFT_BUILD_VERSION}/thrift-${PAIMON_ARROW_THRIFT_BUILD_VERSION}.tar.gz?action=download"
+        )
+    endif()
+endif()
+
 if(DEFINED ENV{PAIMON_RAPIDJSON_URL})
     set(RAPIDJSON_SOURCE_URL "$ENV{PAIMON_RAPIDJSON_URL}")
 else()
@@ -1578,7 +1604,12 @@ macro(build_arrow)
         -Dre2_ROOT=${ARROW_RE2_ROOT}
         -DBUILD_WARNING_LEVEL=PRODUCTION) # ignore warnings under gcc8
 
-    set(ARROW_CONFIGURE SOURCE_SUBDIR "cpp" CMAKE_ARGS ${ARROW_CMAKE_ARGS})
+    set(ARROW_CONFIGURE_COMMAND
+        ${CMAKE_COMMAND} -E env "ARROW_BOOST_URL=${ARROW_BOOST_SOURCE_URL}"
+        "ARROW_RAPIDJSON_URL=${RAPIDJSON_SOURCE_URL}"
+        "ARROW_THRIFT_URL=${ARROW_THRIFT_SOURCE_URL}" ${THIRDPARTY_CONFIGURE_COMMAND}
+        ${ARROW_CMAKE_ARGS} -S <SOURCE_DIR>/cpp -B <BINARY_DIR>)
+    set(ARROW_CONFIGURE CONFIGURE_COMMAND ${ARROW_CONFIGURE_COMMAND})
     set(PATCH_FILE "${CMAKE_CURRENT_LIST_DIR}/arrow.diff")
     externalproject_add(arrow_ep
                         URL ${ARROW_SOURCE_URL}
