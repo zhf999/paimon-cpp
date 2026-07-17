@@ -29,7 +29,7 @@ endif()
 
 # This ensures that things like c++11 get passed correctly
 if(NOT DEFINED CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD 20)
 endif()
 
 # We require a C++11 compliant compiler

@@ -114,7 +114,7 @@ Result<std::unique_ptr<::ArrowSchema>> OrcFileBatchReader::GetFileSchema() const
     // AddMetadata, prefer that over the plain ORC type tree.
     if (reader_->HasMetadataValue(ArrowUtils::kArrowSchemaMetadataKey)) {
         std::string encoded = reader_->GetMetadataValue(ArrowUtils::kArrowSchemaMetadataKey);
-        std::string decoded = arrow::util::base64_decode(encoded);
+        PAIMON_ASSIGN_OR_RAISE_FROM_ARROW(std::string decoded, arrow::util::base64_decode(encoded));
         auto buffer = arrow::Buffer::FromString(std::move(decoded));
         arrow::io::BufferReader buf_reader(buffer);
         PAIMON_ASSIGN_OR_RAISE_FROM_ARROW(std::shared_ptr<arrow::Schema> schema,
